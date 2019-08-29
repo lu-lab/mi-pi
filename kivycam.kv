@@ -1,0 +1,68 @@
+#:kivy 1.10.0
+#:import BoxLayout kivy.uix.boxlayout.BoxLayout
+
+<Interface>:
+    orientation: 'vertical'
+    id: interface
+    Camera:
+        id: camera
+        resolution: root.im_res
+        play: False
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: '66dp'
+        id: bottom_panel
+        Button:
+            size_hint_x: 0.25
+            on_release: app.stop()
+            Image:
+                source: 'icons/exit.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                allow_stretch: False
+        Button:
+            size_hint_x: 0.25
+            on_release: app.open_settings()
+            on_release: root.screenshot()
+            on_release: capture_button.disabled = False
+            on_release: start_button.disabled = False
+            on_release: camera.play = True
+            on_release: root.exp_image_source = 'icons/experiment_not_started.png'
+            on_release: root.snapshot_image_source = 'icons/snapshot.png'
+            on_release: root.exp_text = 'Run experiment'
+            Image:
+                source: 'icons/settings.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                allow_stretch: False
+        Button:
+            id: capture_button
+            size_hint_x: 0.25
+            on_release: root.capture_image()
+            on_release: root.screenshot()
+            Image:
+                source: root.snapshot_image_source
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                allow_stretch: False
+        Button:
+            id: start_button
+            text: root.exp_text
+            font_size: 22
+            on_release: root.screenshot()
+            on_release: root.update_exp_button()
+            Image:
+                source: root.exp_image_source
+                center_x: self.parent.center_x - 100
+                center_y: self.parent.center_y
+                allow_stretch: False
+
+
+
+
+
+
+
+
+
