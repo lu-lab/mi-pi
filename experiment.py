@@ -26,7 +26,7 @@ class Experiment(threading.Thread):
 
         # instantiate the camera object
         self.piCam = CameraSupport(interface._camera._camera, interface.config_file, self.interface.imaging_params,
-                                   self.ledMatrix)
+                                   self.ledMatrix, self.interface.stop_cam, self.interface.video_length)
 
         # at beginning of experiment, populate first Date-Time field in google sheet
         # with 'now' and propagate to end of the experiment field. Experimental Time should

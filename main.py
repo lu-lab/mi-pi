@@ -46,6 +46,7 @@ class Interface(BoxLayout):
     im_res_y = NumericProperty(480)
     im_res = ReferenceListProperty(im_res_x, im_res_y)
     stop_event = threading.Event()
+    stop_cam = threading.Event()
 
     def __init__(self, **kwargs):
         super(Interface, self).__init__(**kwargs)
@@ -99,6 +100,11 @@ class Interface(BoxLayout):
     def check_stop(self):
         while True:
             if self.stop_event.is_set():
+                self.stop_cam.set()
+                # the camera will wait until it's done with any video recording and images it's currently working on
+                # before closing, so we'll wait a while to make sure it has plenty of time to close in a reasonable
+                # manner before calling stop_experiment
+                time.sleep(self.video_length + self.inter_video_interval + 10)
                 self.stop_experiment()
                 return
 
@@ -192,6 +198,8 @@ class Interface(BoxLayout):
         #     self.im_res_x, self.im_res_y = im_res[0], im_res[1]
         self.imaging_params['image_resolution'] = im_res
         self.imaging_params['video_resolution'] = app.config.get('camera settings', 'resolution')
+        self.inter_video_interval = app.config.getint('camera settings', 'inter_video_interval')
+        self.video_length = app.config.getint('camera', 'video_length')
         self.imaging_params['image_frequency'] = app.config.getint('main image processing', 'image_frequency')
         self.imaging_params['delta_threshold'] = app.config.getint('image delta', 'delta_threshold')
         self.imaging_params['num_pixel_threshold'] = app.config.getint('image delta', 'num_pixel_threshold')
@@ -311,6 +319,7 @@ class KivycamApp(App):
             'fps': 30,
             'gain': 1.0,
             'resolution': '1920x1080',
+            'video_length': 30,
             'inter_video_interval': 0
         })
 
