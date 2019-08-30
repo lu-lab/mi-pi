@@ -126,14 +126,15 @@ class Interface(BoxLayout):
             Logger.debug('Interface: update_process closed')
             self.experiment.t_camera.join()
             Logger.debug('Interface: camera closed')
+
         # the experiment has been ended prematurely
         else:
-            # we'll have to kill / terminate update process and threads
-            self.experiment.cam_queue.put(None)
+            # we'll have to terminate the update process
             self.experiment.update_process.terminate()
             Logger.debug('Interface: update_process closed')
-            self.experiment.piCam.stop_recording()
+            self.experiment.t_camera.join()
             Logger.debug('Interface: camera closed')
+
 
         # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
         max_row = self.explength + self.experiment.sheet.start_row
