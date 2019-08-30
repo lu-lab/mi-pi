@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=FLEET
+Comment=Microscopy tool
+Icon=/home/pi/mi-pi/icons/simpleicon.png
+Exec=lxterminal -t "Starting FLEET..." -e fleet.sh
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;

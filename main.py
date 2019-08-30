@@ -16,7 +16,7 @@ from kivy.uix.textinput import TextInput
 from settings import expSettings_json, imagingSettings_json, \
     pressureSettings_json, imageProcessingSettings_json
 from fileTransfer import ManageLocalFiles
-from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, PARTICLE_TOKEN, PARTICLE_DEVICE_ID, \
+from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
     CURDIR, CONFIG_FILE
 from hardwareSupport.hardwareSupport import TeensyConfig
 import experiment
