@@ -24,7 +24,6 @@
         Button:
             size_hint_x: 0.25
             on_release: app.open_settings()
-            on_release: root.screenshot()
             on_release: capture_button.disabled = False
             on_release: start_button.disabled = False
             on_release: camera.play = True
@@ -40,7 +39,6 @@
             id: capture_button
             size_hint_x: 0.25
             on_release: root.capture_image()
-            on_release: root.screenshot()
             Image:
                 source: root.snapshot_image_source
                 center_x: self.parent.center_x
@@ -50,7 +48,6 @@
             id: start_button
             text: root.exp_text
             font_size: 22
-            on_release: root.screenshot()
             on_release: root.update_exp_button()
             Image:
                 source: root.exp_image_source

@@ -96,7 +96,7 @@ class Experiment(threading.Thread):
                     self.cam_queue.task_done()
                     self.cam_queue.join()
                     self.interface.stop_event.set()
-                    return
+                    break
                 else:
                     self.motion_list.append(motion)
                     self.cam_queue.task_done()

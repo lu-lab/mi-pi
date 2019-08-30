@@ -336,6 +336,11 @@ class CameraSupport(object):
                     stream_pipe.kill()
                 motion_queue.put(None)
 
+    def stop_recording(self):
+        # if recordings need to be stopped before the end of the experiment, we'll use this to raise a PiCamera
+        # exception and stop the thread
+        raise picamera.PiCameraError
+
     def calibrate_brightness(self):
         # figure out the size of the numpy matrix to capture to
         # width and height must both be divisible by 16

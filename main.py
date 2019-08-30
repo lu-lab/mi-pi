@@ -27,6 +27,7 @@ from os import makedirs
 import string
 import random
 import time
+import datetime
 import threading
 from shutil import copyfile
 import logging
@@ -103,16 +104,35 @@ class Interface(BoxLayout):
 
     @mainthread
     def stop_experiment(self):
-        # join the other important threads
-        Logger.debug('Interface: process_queue closed')
-        self.experiment.t_motion_queue_check.join()
-        Logger.debug('Interface: motion queue closed')
-        self.experiment.update_process.join()
-        Logger.debug('Interface: update_process closed')
-        self.experiment.t_camera.join()
-        Logger.debug('Interface: camera closed')
+        # finally, make sure to turn the blue LEDs off at the end of the experiment
+        Logger.debug("Interface: updating with final parameters")
+        led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
+        self.experiment.ledMatrix.send_command(led_commands)
+        cur_time = time.strftime("%Y/%m/%d %H:%M:%S")
+        cur_time = datetime.datetime.strptime(cur_time, "%Y/%m/%d %H:%M:%S")
 
-        values = self.experiment.sheet.read_sheet()
+        # the experiment has ended in a regular way.
+        if cur_time > self.experiment.exp_end:
+            # join the other important threads in the proper way
+            # self.experiment.t_motion_queue_check.join()
+            # Logger.debug('Interface: motion queue closed')
+            self.experiment.update_process.join()
+            Logger.debug('Interface: update_process closed')
+            self.experiment.t_camera.join()
+            Logger.debug('Interface: camera closed')
+        # the experiment has been ended prematurely
+        else:
+            # we'll have to kill / terminate update process and threads
+            self.experiment.cam_queue.put(None)
+            self.experiment.update_process.terminate()
+            Logger.debug('Interface: update_process closed')
+            self.experiment.piCam.stop_recording()
+            Logger.debug('Interface: camera closed')
+
+        # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
+        max_row = self.explength + self.experiment.sheet.start_row
+        cell_range = 'A1:L' + str(max_row)
+        values = self.experiment.sheet.read_sheet(cell_range='A1:L')
         self.experiment.write_sheet_to_dbx(values)
 
         src = self.local_savepath
@@ -144,7 +164,6 @@ class Interface(BoxLayout):
         self.exp_image_source = 'icons/experiment_not_prepped.png'
         self.exp_text = 'Experiment over'
         Logger.info('Interface: experiment ended')
-        self.screenshot()
 
     def set_config(self):
         app = App.get_running_app()

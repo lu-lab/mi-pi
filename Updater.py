@@ -67,11 +67,8 @@ class Updater(multiprocessing.Process):
         t_update.start()
 
         t_update.join()
-        Logger.debug('Updater: update thread joined')
-        # finally, make sure to turn the blue LEDs off at the end of the experiment
-        Logger.debug("Updater: updating with final parameters")
-        led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
-        self.ledMatrix.send_command(led_commands)
+        Logger.debug('Updater: update timer thread joined')
+        return
 
     def update(self, next_params):
 
@@ -198,7 +195,6 @@ class Updater(multiprocessing.Process):
         except ValueError:
             return 0
 
-
     def get_dosage(self):
         led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell)
         try:
@@ -276,7 +272,7 @@ class RepeatingTimer(threading.Thread):
                     else:
                         self.function(self.default_args)
             except StopIteration:
-                Logger.info('Repeating Timer: ending repeating timer via StopIteration')
+                Logger.info('Repeating Timer: ending repeating timer')
                 self.stop()
                 return
 
