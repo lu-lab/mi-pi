@@ -46,7 +46,7 @@ class SheetsTransferData:
             ],
         ]
         body = {'values': values}
-        self.write_sheet(body, cell_range='A2')
+        self.write_sheet(body, cell_range='B1')
 
         # compute time resolution in seconds
         self.time_res = int(float(time_list[0]))*3600 + int(float(time_list[1]))*60 + int(float(time_list[2]))

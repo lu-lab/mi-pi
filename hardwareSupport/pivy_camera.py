@@ -120,6 +120,8 @@ class CameraSupport(object):
                 self.camera.close()
                 self.video_only(motion_queue)
             finally:
+                # wait a few seconds to make sure everything is wrapped up
+                time.sleep(5)
                 # stop recording gracefully
                 try:
                     self.camera.stop_recording(splitter_port=2)
@@ -163,6 +165,8 @@ class CameraSupport(object):
                 self.camera.close()
                 self.video_and_webstream(motion_queue)
             finally:
+                # wait a few seconds to make sure everything is wrapped up
+                time.sleep(5)
                 # stop recording gracefully
                 try:
                     self.camera.stop_recording(splitter_port=2)
@@ -241,6 +245,8 @@ class CameraSupport(object):
                 self.camera.close()
                 self.video_and_motion(motion_queue)
             finally:
+                # wait a few seconds to make sure all image processing is wrapped up
+                time.sleep(5)
                 # stop recording gracefully
                 try:
                     self.camera.stop_recording(splitter_port=2)
@@ -320,6 +326,8 @@ class CameraSupport(object):
                 self.camera.close()
                 self.video_and_motion_and_webstream(motion_queue)
             finally:
+                # wait a few seconds to make sure all image processing is wrapped up
+                time.sleep(5)
                 # stop recording gracefully
                 try:
                     self.camera.stop_recording(splitter_port=2)
