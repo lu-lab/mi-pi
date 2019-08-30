@@ -85,23 +85,23 @@ class CameraSupport(object):
         Logger.info('Camera: images path %s' % self.image_save_dir)
         Logger.info('Camera: local init success')
 
-    def capture_video(self, end_time, motion_queue):
+    def capture_video(self, end_time, motion_queue, stop_event):
         self.end_time = end_time
 
         if not self.webstream and self.image_processing_mode == 'None':
-            self.video_only(motion_queue)
+            self.video_only(motion_queue, stop_event)
 
         elif self.webstream and self.image_processing_mode == 'None':
-            self.video_and_webstream(motion_queue)
+            self.video_and_webstream(motion_queue, stop_event)
 
         elif self.image_processing_mode != 'None' and not self.webstream:
-            self.video_and_motion(motion_queue)
+            self.video_and_motion(motion_queue, stop_event)
 
         elif self.webstream and self.image_processing_mode != 'None':
-            self.video_and_motion_and_webstream(motion_queue)
+            self.video_and_motion_and_webstream(motion_queue, stop_event)
         return
 
-    def video_only(self, motion_queue):
+    def video_only(self, motion_queue, stop_event):
         Logger.info('Camera: Video capture only')
         # record a sequence of videos until the end of the experiment
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
@@ -109,7 +109,7 @@ class CameraSupport(object):
             try:
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not stop_event.is_set():
                     self.camera.wait_recording(self.video_length, splitter_port=2)
                     timestr = time.strftime("%Y%m%d_%H%M%S")
                     videofile = "VID_{}.h264".format(timestr)
@@ -134,7 +134,7 @@ class CameraSupport(object):
                 Logger.info('Camera: recording stopped')
                 motion_queue.put(None)
 
-    def video_and_webstream(self, motion_queue):
+    def video_and_webstream(self, motion_queue, stop_event):
         Logger.info('Camera: Video and youtube livestream')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
@@ -144,7 +144,7 @@ class CameraSupport(object):
             try:
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not stop_event.is_set():
                     self.camera.wait_recording(self.video_length, splitter_port=2)
                     # if there's an issue with the stream and it closes,
                     # just ignore it and continue recording to disk
@@ -185,7 +185,7 @@ class CameraSupport(object):
                 Logger.info('Camera: recording stopped')
                 motion_queue.put(None)
 
-    def video_and_motion(self, motion_queue):
+    def video_and_motion(self, motion_queue, stop_event):
         Logger.info('Camera: video and local motion detection')
         cur_image = CurrentImage(self.image_processing_params)
         self.img_pool = ProcessorPool(3, cur_image, motion_queue, self.image_save_dir)
@@ -202,7 +202,7 @@ class CameraSupport(object):
                 self.img_pool.frame_queue.put(img_counter)
                 self.img_pool.processor.frame_event.set()
                 t_image = 0
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not stop_event.is_set():
                     t_video = 0
                     while t_video < self.video_length:
                         self.camera.wait_recording(1, splitter_port=2)
@@ -260,7 +260,7 @@ class CameraSupport(object):
                 self.img_pool.exit()
                 motion_queue.put(None)
 
-    def video_and_motion_and_webstream(self, motion_queue):
+    def video_and_motion_and_webstream(self, motion_queue, stop_event):
         Logger.info('Camera: video, youtube live stream, and local motion detection')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
@@ -279,7 +279,7 @@ class CameraSupport(object):
                 self.img_pool.frame_queue.put(img_counter)
                 self.img_pool.processor.frame_event.set()
                 t_image = 0
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not stop_event.is_set():
                     t_video = 0
                     while t_video < self.video_length:
                         self.camera.wait_recording(1, splitter_port=2)

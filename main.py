@@ -131,7 +131,7 @@ class Interface(BoxLayout):
         else:
             # we'll have to terminate the update process
             self.experiment.update_process.terminate()
-            Logger.debug('Interface: update_process closed')
+            Logger.debug('Interface: update_process terminated')
             self.experiment.t_camera.join()
             Logger.debug('Interface: camera closed')
 
