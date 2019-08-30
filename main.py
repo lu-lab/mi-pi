@@ -199,7 +199,7 @@ class Interface(BoxLayout):
         self.imaging_params['image_resolution'] = im_res
         self.imaging_params['video_resolution'] = app.config.get('camera settings', 'resolution')
         self.inter_video_interval = app.config.getint('camera settings', 'inter_video_interval')
-        self.video_length = app.config.getint('camera', 'video_length')
+        self.video_length = app.config.getint('camera settings', 'video_length')
         self.imaging_params['image_frequency'] = app.config.getint('main image processing', 'image_frequency')
         self.imaging_params['delta_threshold'] = app.config.getint('image delta', 'delta_threshold')
         self.imaging_params['num_pixel_threshold'] = app.config.getint('image delta', 'num_pixel_threshold')
