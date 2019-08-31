@@ -66,7 +66,7 @@ class Experiment(threading.Thread):
                                               self.sheet, self.motion_list, self.piCam.max_difference)
         if self.interface.timelapse_option == 'None':
             self.t_camera = threading.Thread(name='camera', target=self.piCam.capture_video,
-                                             args=(self.exp_end, self.cam_queue, self.interface.stop_cam))
+                                             args=(self.exp_end, self.cam_queue))
         elif self.interface.timelapse_option == 'linescan':
             self.t_camera = threading.Thread(name='camera', target=self.piCam.linescan_timelapse,
                                              args=(self.exp_end, self.cam_queue))

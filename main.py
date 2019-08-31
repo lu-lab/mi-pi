@@ -81,7 +81,7 @@ class Interface(BoxLayout):
 
     def update_exp_button(self):
         if self.is_exp_running:
-            self.stop_experiment()
+            self.stop_event.set()
         elif not self.is_exp_running:
             self.start_experiment()
 
@@ -99,42 +99,55 @@ class Interface(BoxLayout):
 
     def check_stop(self):
         while True:
+            # if the experiment ends
             if self.stop_event.is_set():
-                self.stop_cam.set()
-                # the camera will wait until it's done with any video recording and images it's currently working on
-                # before closing, so we'll wait a while to make sure it has plenty of time to close in a reasonable
-                # manner before calling stop_experiment
-                time.sleep(self.video_length + self.inter_video_interval + 10)
-                self.stop_experiment()
+                cur_time = time.strftime("%Y/%m/%d %H:%M:%S")
+                cur_time = datetime.datetime.strptime(cur_time, "%Y/%m/%d %H:%M:%S")
+                if not self.stop_cam.is_set():
+                    # if the current time is later than the experiment end time, the experiment ended in the normal way,
+                    # so the camera is already closed and we don't have to set the stop_cam event
+                    if cur_time > self.experiment.exp_end:
+                        is_early = False
+                    # the experiment was interrupted early, so the camera isn't closed yet. close it before intitiating
+                    # the usual stop sequence
+                    else:
+                        is_early = True
+                        self.stop_cam.set()
+                        # the camera will wait until it's done with any video recording and images it's currently
+                        # working on before closing, so we'll wait a while to make sure it has plenty of time to close
+                        # in a reasonable manner before calling stop_experiment
+                        time.sleep(self.video_length + self.inter_video_interval + 10)
+
+                    self.stop_experiment(is_early)
+                # if stop_cam is set, stop_experimemt has already been called, don't call it again
+                else:
+                    pass
+
                 return
 
     @mainthread
-    def stop_experiment(self):
+    def stop_experiment(self, is_early):
         # finally, make sure to turn the blue LEDs off at the end of the experiment
         Logger.debug("Interface: updating with final parameters")
         led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
         self.experiment.ledMatrix.send_command(led_commands)
-        cur_time = time.strftime("%Y/%m/%d %H:%M:%S")
-        cur_time = datetime.datetime.strptime(cur_time, "%Y/%m/%d %H:%M:%S")
 
         # the experiment has ended in a regular way.
-        if cur_time > self.experiment.exp_end:
-            # join the other important threads in the proper way
+        if not is_early:
+            # join the update process in the proper way
             # self.experiment.t_motion_queue_check.join()
             # Logger.debug('Interface: motion queue closed')
             self.experiment.update_process.join()
             Logger.debug('Interface: update_process closed')
-            self.experiment.t_camera.join()
-            Logger.debug('Interface: camera closed')
 
         # the experiment has been ended prematurely
         else:
             # we'll have to terminate the update process
             self.experiment.update_process.terminate()
             Logger.debug('Interface: update_process terminated')
-            self.experiment.t_camera.join()
-            Logger.debug('Interface: camera closed')
 
+        self.experiment.t_camera.join()
+        Logger.debug('Interface: camera closed')
 
         # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
         max_row = self.explength + self.experiment.sheet.start_row
@@ -165,7 +178,7 @@ class Interface(BoxLayout):
         app.config.write()
 
 
-        # update experiment button (changes button color and updates 'is_exp_running'
+        # update experiment button (changes button image and text and updates 'is_exp_running')
         self.is_exp_running = False
         self.snapshot_image_source = 'icons/snapshot_not_prepped.png'
         self.exp_image_source = 'icons/experiment_not_prepped.png'
