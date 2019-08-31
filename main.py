@@ -108,22 +108,21 @@ class Interface(BoxLayout):
                     # so the camera is already closed and we don't have to set the stop_cam event
                     if cur_time > self.experiment.exp_end:
                         is_early = False
+
                     # the experiment was interrupted early, so the camera isn't closed yet. close it before intitiating
                     # the usual stop sequence
                     else:
                         is_early = True
                         self.stop_cam.set()
                         # the camera will wait until it's done with any video recording and images it's currently
-                        # working on before closing, so we'll wait a while to make sure it has plenty of time to close
+                        # collecting before closing, so we'll wait a while to make sure it has plenty of time to close
                         # in a reasonable manner before calling stop_experiment
                         time.sleep(self.video_length + self.inter_video_interval + 10)
 
                     self.stop_experiment(is_early)
-                # if stop_cam is set, stop_experimemt has already been called, don't call it again
-                else:
-                    pass
-
-                return
+                    # once stop_experiment has been called once, return so it doesn't accidentally get called
+                    # twice!
+                    return
 
     @mainthread
     def stop_experiment(self, is_early):
