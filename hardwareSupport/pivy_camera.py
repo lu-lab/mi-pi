@@ -67,7 +67,6 @@ class CameraSupport(object):
             self.camera = picamera.PiCamera(resolution=(3280, 2464))
 
         self.video_length = video_length
-        self.cam_lock = threading.Lock()
 
         # set resolution and fps
         self.camera.framerate = int(float(self.fps))
@@ -203,6 +202,7 @@ class CameraSupport(object):
                 self.img_pool.processor.frame_event.set()
                 t_image = 0
                 while not self.is_exp_done() and not self.stop_event.is_set():
+                    Logger.debug('Camera: video recording started')
                     t_video = 0
                     while t_video < self.video_length:
                         self.camera.wait_recording(1, splitter_port=2)
@@ -212,10 +212,12 @@ class CameraSupport(object):
                             self.camera.capture(self.img_pool, format='bgr', splitter_port=3,
                                                 resize=self.image_processing_params['image_resolution'],
                                                 use_video_port=True)
-                            Logger.info('Camera: capture at time %s' % time.time())
+                            Logger.info('Camera: capture while collecting video at time %s' % time.time())
                             img_counter += 1
                             self.img_pool.frame_queue.put(img_counter)
+                            Logger.debug('Camera: img_counter in frame queue')
                             self.img_pool.processor.frame_event.set()
+                            Logger.debug('Camera: frame_event set')
                             vmem = psutil.virtual_memory()
                             Logger.debug('Memory usage is %s' % vmem.percent)
                             t_image = 0
@@ -224,8 +226,10 @@ class CameraSupport(object):
                     videopath = join(self.video_save_dir, videofile)
                     stream.copy_to(videopath)
                     stream.clear()
+                    Logger.debug('Camera: video %s collected' % videopath)
+                    t_inter_video = 0
                     if self.inter_video_interval > 0:
-                        t_inter_video = 0
+                        Logger.debug('Camera: start inter-video interval')
                         while t_inter_video < self.inter_video_interval:
                             time.sleep(1)
                             t_image += 1
@@ -234,13 +238,16 @@ class CameraSupport(object):
                                 self.camera.capture(self.img_pool, format='bgr', splitter_port=3,
                                                     resize=self.image_processing_params['image_resolution'],
                                                     use_video_port=True)
-                                Logger.info('Camera: capture at time %s' % time.time())
+                                Logger.info('Camera: capture during inter-video interval at time %s' % time.time())
                                 img_counter += 1
                                 self.img_pool.frame_queue.put(img_counter)
+                                Logger.debug('Camera: img_counter in frame_queue')
                                 self.img_pool.processor.frame_event.set()
+                                Logger.debug('Camera: frame_event set')
                                 vmem = psutil.virtual_memory()
                                 Logger.debug('Memory usage is %s' % vmem.percent)
                                 t_image = 0
+                        Logger.debug('Camera: end inter-video interval')
 
             except picamera.PiCameraError:
                 # if for whatever reason the picamera isn't recording, restart the function!
@@ -302,8 +309,8 @@ class CameraSupport(object):
                     videopath = join(self.video_save_dir, videofile)
                     stream.copy_to(videopath)
                     stream.clear()
+                    t_inter_video = 0
                     if self.inter_video_interval > 0:
-                        t_inter_video = 0
                         while t_inter_video < self.inter_video_interval:
                             time.sleep(1)
                             t_image += 1
@@ -312,7 +319,7 @@ class CameraSupport(object):
                                 self.camera.capture(self.img_pool, format='bgr', splitter_port=3,
                                                     resize=self.image_processing_params['image_resolution'],
                                                     use_video_port=True)
-                                Logger.info('Camera: capture at time %s' % time.time())
+                                Logger.info('Camera: capture during inter-video interval at time %s' % time.time())
                                 img_counter += 1
                                 self.img_pool.frame_queue.put(img_counter)
                                 self.img_pool.processor.frame_event.set()
@@ -323,9 +330,9 @@ class CameraSupport(object):
             except BrokenPipeError:
                 Logger.warning('Streaming: Your youtube link or youtube key is likely invalid')
                 self.camera.stop_recording(splitter_port=3)
-            except picamera.PiCameraError:
+            except picamera.PiCameraError as err:
                 # if for whatever reason the picamera isn't recording, restart the function!
-                Logger.info('Camera: PiCamera error, re-starting camera')
+                Logger.info('Camera: PiCamera error, re-starting camera. Error is %s' % err)
                 self.camera.close()
                 self.video_and_motion_and_webstream(motion_queue)
             finally:
