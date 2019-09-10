@@ -50,6 +50,10 @@ class Experiment(threading.Thread):
                                                            interface.paired_system_id, param_col_dict, data_col_dict,
                                                            time_res_cell, led_dosage_cell, interface.exp_code)
 
+        # clear any old data out of the data columns of the google spreadsheet
+        for (k, v) in data_col_dict.items():
+            self.sheet.clear_data(v)
+
         # if google sheet format is changed, make sure to provide the right cell
         # to init time to
         self.exp_start = self.sheet.init_time()

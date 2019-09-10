@@ -200,12 +200,20 @@ class ImageProcessor(threading.Thread):
                             raise picamera.PiCameraValueError(
                                 'Incorrect buffer length for resolution %dx%d' % (self.owner.cur_image.width,
                                                                                   self.owner.cur_image.height))
+                    # convert the image to a numpy array usable by opencv
                     im = np.frombuffer(self.stream.getvalue(), dtype=np.uint8). \
                         reshape((self.owner.cur_image.fheight, self.owner.cur_image.fwidth, 3))[
                          :self.owner.cur_image.height, :self.owner.cur_image.width, :]
+
+                    # reset the image event to False
+                    self.im_event.clear()
+
+                    # wait for a frame number to be added to the frame number queue
                     if self.frame_event.wait(1):
                         frame_no = self.owner.frame_queue.get()
                         Logger.info('ImageProcessor: an image is here! Frame %s' % frame_no)
+
+                        # if it's the first frame, we just convert to grayscale
                         if frame_no is 1:
 
                                 im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -217,6 +225,8 @@ class ImageProcessor(threading.Thread):
                                 self.owner.cur_image.set_image(im)
                                 # Logger.info('ImageProcessor: first frame set')
 
+                        # if it's past the first frame, convert to gray and calculate the movement delta between this
+                        # and the previous image and send that info to the Update process via the motion_queue
                         else:
                                 # Read the new image and the old one and subtract
                                 im1 = self.owner.cur_image.im
@@ -233,6 +243,9 @@ class ImageProcessor(threading.Thread):
                                     self.owner.motion_queue.put(mvmnt)
                                 Logger.info('ImageProcessor: image processed, time elapsed is %s, frame no is %s'
                                             % (time_elapsed, frame_no))
+
+                        # reset frame event to False and clear the frame number from the frame number queue
+                        self.frame_event.clear()
                         self.owner.frame_queue.task_done()
 
                 finally:

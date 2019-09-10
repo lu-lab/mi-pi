@@ -58,6 +58,34 @@ class SheetsTransferData:
             col_dict[k] = ord(v.lower())-97
         return col_dict
 
+    def clear_data(self, column):
+        # clear data from the specified column (excluding headers) off of the spreadsheet
+        clear_range = column + str(self.start_row) + ':' + column
+        spreadsheet_range = self.spreadsheet_range + '!' + self.cell_range
+        body = {}
+        success = False
+        counter = 0
+        while not success and counter < 4:
+            try:
+                # build the service
+                service = build('sheets', 'v4', credentials=self.creds)
+                response = service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id,
+                                                                 range=spreadsheet_range, body=body)\
+                                                                .execute()
+                success = True
+            except HttpError as err:
+                # If the error is a rate limit or connection error,
+                # wait and try again.
+                if err.resp.status in [403, 500, 503]:
+                    time.sleep(5)
+            except socket.timeout:
+                time.sleep(5)
+            finally:
+                counter += 1
+
+
+        gc.collect()
+
     def init_time(self, cell_range='A5'):
         timestr = time.strftime("%Y/%m/%d %H:%M:%S")
         values = [
