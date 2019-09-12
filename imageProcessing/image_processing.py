@@ -148,6 +148,8 @@ class ProcessorPool:
                     Logger.info('ProcessorPool: no processor available')
             if self.processor:
                 self.processor.stream.write(image)
+                # wait until frame event arrives to set image event
+                frame_event_set = self.processor.frame_event.wait()
                 self.processor.im_event.set()
 
     def flush(self):
@@ -191,6 +193,8 @@ class ImageProcessor(threading.Thread):
             if self.im_event.wait(1):
                 try:
                     t1 = time.time()
+                    frame_no = self.owner.frame_queue.get()
+                    Logger.info('ImageProcessor: Frame %s' % frame_no)
                     if len(self.stream.getvalue()) != (self.owner.cur_image.fwidth *
                                                        self.owner.cur_image.fheight * 3):
                         fwidth, fheight = self.owner.cur_image.raw_resolution((self.owner.cur_image.width,
@@ -204,49 +208,41 @@ class ImageProcessor(threading.Thread):
                     im = np.frombuffer(self.stream.getvalue(), dtype=np.uint8). \
                         reshape((self.owner.cur_image.fheight, self.owner.cur_image.fwidth, 3))[
                          :self.owner.cur_image.height, :self.owner.cur_image.width, :]
+                    Logger.debug('ImageProcessor: image stored!')
 
-                    # reset the image event to False
-                    self.im_event.clear()
+                    # if it's the first frame, we just convert to grayscale
+                    if frame_no is 1:
 
-                    # wait for a frame number to be added to the frame number queue
-                    if self.frame_event.wait(1):
-                        frame_no = self.owner.frame_queue.get()
-                        Logger.info('ImageProcessor: an image is here! Frame %s' % frame_no)
+                            im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+                            if img_parameters['save_images']:
+                                fp = join(self.dir, 'unprocessed', 'img1.png')
+                                cv2.imwrite(fp, im)
 
-                        # if it's the first frame, we just convert to grayscale
-                        if frame_no is 1:
+                            # Logger.info('ImageProcessor: first image converted to gray')
+                            self.owner.cur_image.set_image(im)
+                            # Logger.info('ImageProcessor: first frame set')
 
-                                im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-                                if img_parameters['save_images']:
-                                    fp = join(self.dir, 'unprocessed', 'img1.png')
-                                    cv2.imwrite(fp, im)
+                    # if it's past the first frame, convert to gray and calculate the movement delta between this
+                    # and the previous image and send that info to the Update process via the motion_queue
+                    else:
+                            # Read the new image and the old one and subtract
+                            im1 = self.owner.cur_image.im
+                            im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+                            if img_parameters['save_images']:
+                                fn = 'img' + str(frame_no) + '.png'
+                                fp = join(self.dir, 'unprocessed', fn)
+                                cv2.imwrite(fp, im)
 
-                                # Logger.info('ImageProcessor: first image converted to gray')
-                                self.owner.cur_image.set_image(im)
-                                # Logger.info('ImageProcessor: first frame set')
+                            self.owner.cur_image.set_image(im)
+                            mvmnt = delta_movement(im1, im, img_parameters)
+                            time_elapsed = time.time() - t1
+                            with self.owner.lock:
+                                self.owner.motion_queue.put(mvmnt)
+                            Logger.info('ImageProcessor: image processed, time elapsed is %s, frame no is %s'
+                                        % (time_elapsed, frame_no))
 
-                        # if it's past the first frame, convert to gray and calculate the movement delta between this
-                        # and the previous image and send that info to the Update process via the motion_queue
-                        else:
-                                # Read the new image and the old one and subtract
-                                im1 = self.owner.cur_image.im
-                                im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-                                if img_parameters['save_images']:
-                                    fn = 'img' + str(frame_no) + '.png'
-                                    fp = join(self.dir, 'unprocessed', fn)
-                                    cv2.imwrite(fp, im)
-
-                                self.owner.cur_image.set_image(im)
-                                mvmnt = delta_movement(im1, im, img_parameters)
-                                time_elapsed = time.time() - t1
-                                with self.owner.lock:
-                                    self.owner.motion_queue.put(mvmnt)
-                                Logger.info('ImageProcessor: image processed, time elapsed is %s, frame no is %s'
-                                            % (time_elapsed, frame_no))
-
-                        # reset frame event to False and clear the frame number from the frame number queue
-                        self.frame_event.clear()
-                        self.owner.frame_queue.task_done()
+                    # reset frame event to False
+                    self.owner.frame_queue.task_done()
 
                 finally:
                     self.stream.seek(0)
@@ -254,6 +250,7 @@ class ImageProcessor(threading.Thread):
                     # Reset the events
                     self.im_event.clear()
                     self.frame_event.clear()
+                    Logger.debug('ImageProcessor: Returning processor to pool')
                     # Return ourselves to the available pool
                     with self.owner.lock:
                         self.owner.pool.append(self)

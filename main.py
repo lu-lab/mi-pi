@@ -349,7 +349,8 @@ class KivycamApp(App):
         config.setdefaults('main image processing', {
             'image_processing_mode': 'None',
             'motion_with_feedback': 0,
-            'sleep_prior': 20,
+            'sleep_prior': 10,
+            'max_exposure': 30,
             'image_resolution': '640x480',
             'image_frequency': 15,
             'save_images': 0,

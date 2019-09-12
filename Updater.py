@@ -44,6 +44,12 @@ class Updater(multiprocessing.Process):
         self.paired_led_dosage_percent = self.sleep_percent
         self.led_dosage_percent = self.sleep_percent
         self.check_counter = 0
+        # get the maximum percent light exposure
+        self.max_exposure = int(config['main image processing']['max_exposure'])
+        # reportedly, WT worms spend ~ 90% of their development dwelling, but LED dosages >30% tend to
+        # kill animals early in life, so we will only turn the blue LEDs on ~1/3 of the time when we
+        # don't detect movement
+        self.dwell_dosage_correction = self.max_exposure/90
 
         self.data = {}
         random.seed()
@@ -83,21 +89,30 @@ class Updater(multiprocessing.Process):
                 if self.motion_average > self.max_difference:
                     # the upper bound is mostly to account for led illumination
                     # drastically changing the delta image calculation
-                    self.motion_average = 'None'
+                    self.motion_average = 'Above max'
             else:
                 self.motion_average = 'None'
 
             if self.image_processing_mode == 'image delta':
-
                 # update opto parameters based on motion (but only if this is the driving system)
-                if self.motion_average != 'None' and self.is_driving_system:
-                    # currently configured to turn light on when motion is low
-                    if (self.motion_average > self.num_pixel_threshold) or not self.motion_with_feedback:
+                if self.is_driving_system:
+                    if self.motion_average != 'None' and self.motion_average != 'Above max':
+                        # currently configured to turn light on when motion is low
+                        if (self.motion_average > self.num_pixel_threshold) or not self.motion_with_feedback:
+                            next_params['opto_on'] = str(0)
+                        else:
+                            rand_int = random.randint(1, 100)
+                            if rand_int <= self.dwell_dosage_correction:
+                                next_params['opto_on'] = str(1)
+                            else:
+                                next_params['opto_on'] = str(0)
+                    elif self.motion_average == 'None' or self.motion_average == 'Above max':
                         next_params['opto_on'] = str(0)
-                    else:
-                        next_params['opto_on'] = str(1)
-                elif self.motion_average == 'None' and self.is_driving_system:
-                    next_params['opto_on'] = str(0)
+
+                    # if we exceed the max exposure percent, keep the light off
+                    if self.led_dosage_percent > self.max_exposure:
+                        next_params['opto_on'] = str(0)
+                        Logger.info('Updater: exceeded max exposure')
 
                 # update opto parameters based on the paired system's led dosage
                 elif not self.is_driving_system:
@@ -200,6 +215,7 @@ class Updater(multiprocessing.Process):
         try:
             return float(led_dosage[0][0])
         except ValueError:
+            Logger.debug('Updater: unable to get led dosage')
             return 0
 
     def upload_to_remote(self):

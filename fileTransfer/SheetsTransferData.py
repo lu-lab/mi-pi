@@ -61,7 +61,7 @@ class SheetsTransferData:
     def clear_data(self, column):
         # clear data from the specified column (excluding headers) off of the spreadsheet
         clear_range = column + str(self.start_row) + ':' + column
-        spreadsheet_range = self.spreadsheet_range + '!' + self.cell_range
+        spreadsheet_range = self.spreadsheet_range + '!' + clear_range
         body = {}
         success = False
         counter = 0
@@ -71,7 +71,8 @@ class SheetsTransferData:
                 service = build('sheets', 'v4', credentials=self.creds)
                 response = service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id,
                                                                  range=spreadsheet_range, body=body)\
-                                                                .execute()
+                                                          .execute()
+                Logger.debug('Sheets: column %s cleared')
                 success = True
             except HttpError as err:
                 # If the error is a rate limit or connection error,
@@ -82,8 +83,6 @@ class SheetsTransferData:
                 time.sleep(5)
             finally:
                 counter += 1
-
-
         gc.collect()
 
     def init_time(self, cell_range='A5'):
