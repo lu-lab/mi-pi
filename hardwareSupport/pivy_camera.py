@@ -215,9 +215,9 @@ class CameraSupport(object):
                             Logger.info('Camera: capture while collecting video at time %s' % time.time())
                             img_counter += 1
                             self.img_pool.frame_queue.put(img_counter)
-                            # Logger.debug('Camera: img_counter in frame queue')
+                            Logger.debug('Camera: img_counter in frame queue')
                             self.img_pool.processor.frame_event.set()
-                            # Logger.debug('Camera: frame_event set')
+                            Logger.debug('Camera: frame_event set')
                             vmem = psutil.virtual_memory()
                             Logger.debug('Memory usage is %s' % vmem.percent)
                             t_image = 0
