@@ -199,7 +199,9 @@ class CameraSupport(object):
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 img_counter = 1
                 self.img_pool.frame_queue.put(img_counter)
+                Logger.debug('Camera: img_counter in frame queue')
                 self.img_pool.processor.frame_event.set()
+                Logger.debug('Camera: frame_event set')
                 t_image = 0
                 while not self.is_exp_done() and not self.stop_event.is_set():
                     Logger.debug('Camera: video recording started')

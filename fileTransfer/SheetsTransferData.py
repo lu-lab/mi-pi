@@ -72,7 +72,7 @@ class SheetsTransferData:
                 response = service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id,
                                                                  range=spreadsheet_range, body=body)\
                                                           .execute()
-                Logger.debug('Sheets: column %s cleared')
+                Logger.debug('Sheets: column %s cleared' % column)
                 success = True
             except HttpError as err:
                 # If the error is a rate limit or connection error,
