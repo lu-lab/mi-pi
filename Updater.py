@@ -49,7 +49,8 @@ class Updater(multiprocessing.Process):
         # reportedly, WT worms spend ~ 90% of their development dwelling, but LED dosages >30% tend to
         # kill animals early in life, so we will only turn the blue LEDs on ~1/3 of the time when we
         # don't detect movement
-        self.dwell_dosage_correction = self.max_exposure/90
+        self.dwell_dosage_correction = (self.max_exposure/90)*100
+        Logger.info('Updater: Dosage correction for dwelling: %s' % self.dwell_dosage_correction)
 
         self.data = {}
         random.seed()
