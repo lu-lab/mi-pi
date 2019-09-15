@@ -74,9 +74,9 @@ class Experiment(threading.Thread):
         elif self.interface.timelapse_option == 'linescan':
             self.t_camera = threading.Thread(name='camera', target=self.piCam.linescan_timelapse,
                                              args=(self.exp_end, self.cam_queue))
-        elif self.interface.timelapse_option == 'brightfield':
+        else:
             self.t_camera = threading.Thread(name='camera', target=self.piCam.timelapse,
-                                             args=(self.exp_end, self.cam_queue))
+                                             args=(self.exp_end, self.cam_queue, self.interface.timelapse_option))
 
         self.t_motion_queue_check = threading.Thread(name='motion_queue_check', target=self.check_queue)
         Logger.info('Experiment: start time is %s' % self.exp_start.strftime("%H:%M:%S %B %d, %Y"))

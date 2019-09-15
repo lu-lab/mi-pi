@@ -438,9 +438,9 @@ class CameraSupport(object):
         # send the stop signal to the rest of the app
         motion_queue.put(None)
 
-    def timelapse(self, end_time, motion_queue):
+    def timelapse(self, end_time, motion_queue, matrix_mode):
         self.end_time = end_time
-        self.ledMatrix.send_command([{'matrix_mode': 'brightfield'}])
+        self.ledMatrix.send_command([{'matrix_mode': matrix_mode}])
 
         time.sleep(2)
         # set up for consistent imaging

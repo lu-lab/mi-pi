@@ -92,7 +92,7 @@ imagingSettings_json = json.dumps([
      'desc': 'LED matrix options for timelapse imaging',
      'section': 'LED matrix',
      'key': 'timelapse_options',
-     'options': ['None', 'brightfield', 'linescan']},
+     'options': ['None', 'brightfield', 'darkfield', 'linescan']},
     {'type': 'numeric',
      'title': 'image frequency',
      'desc': 'in seconds',
