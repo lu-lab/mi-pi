@@ -155,8 +155,12 @@ class Interface(BoxLayout):
         self.experiment.write_sheet_to_dbx(values)
 
         # copy logs to experiment folder
-        log_path = '/'.join(['.kivy', LOG_DIR, LOG_NAME])
-        file_to = '/'.join([self.local_savepath, LOG_NAME])
+        # figure out the actual path by looking for the most recently modified folder.
+        log_dir = '/'.join(['.kivy', LOG_DIR])
+        files = os.listdir(log_dir)
+        paths = [os.path.join(log_dir, basename) for basename in files]
+        log_path = max(paths, key=os.path.getctime)
+        file_to = '/'.join([self.local_savepath, os.path.basename(log_path)])
         copyfile(log_path, file_to)
 
         src = self.local_savepath
