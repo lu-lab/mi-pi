@@ -410,7 +410,8 @@ class KivycamApp(App):
             # check that it's a recognized system id (found in 'keys' file)
             if value not in SYSTEM_IDS:
                 Logger.info('App: System ID ' + key + ' not in recognized system IDs')
-
+        if key == 'ledx' or key == 'ledy' or key == 'ledcolor' or key == 'matrixradius':
+            self.root.set_config()
 
     def close_settings(self, settings=None):
         Logger.info('App: close settings')
