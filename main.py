@@ -156,7 +156,7 @@ class Interface(BoxLayout):
 
         # copy logs to experiment folder
         # figure out the actual path by looking for the most recently modified folder.
-        log_dir = '/'.join(['.kivy', LOG_DIR])
+        log_dir = '/'.join(['/home/pi/.kivy', LOG_DIR])
         files = os.listdir(log_dir)
         paths = [os.path.join(log_dir, basename) for basename in files]
         log_path = max(paths, key=os.path.getctime)
