@@ -17,7 +17,7 @@ from settings import expSettings_json, imagingSettings_json, \
     pressureSettings_json, imageProcessingSettings_json
 from fileTransfer import ManageLocalFiles
 from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
-    CURDIR, CONFIG_FILE
+    CURDIR, CONFIG_FILE, LOG_DIR, LOG_NAME
 from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
 import experiment
 
@@ -155,11 +155,8 @@ class Interface(BoxLayout):
         self.experiment.write_sheet_to_dbx(values)
 
         # copy logs to experiment folder
-        app = App.get_running_app()
-        log_dir = app.config.get('kivy', 'log_dir')
-        log_name = app.config.get('kivy', 'log_name')
-        log_path = '/'.join(['.kivy', log_dir, log_name])
-        file_to = '/'.join([self.local_savepath, log_name])
+        log_path = '/'.join(['.kivy', LOG_DIR, LOG_NAME])
+        file_to = '/'.join([self.local_savepath, LOG_NAME])
         copyfile(log_path, file_to)
 
         src = self.local_savepath
@@ -180,7 +177,7 @@ class Interface(BoxLayout):
         ManageLocalFiles.cleanup_files(join(src, 'images/'), join(dest, 'images/'), self.rclone_name)
 
         # reset folder names in .ini file for next experiment
-
+        app = App.get_running_app()
         app.config.set('experiment settings', 'local_exp_path', self.top_dir_local)
         app.config.set('experiment settings', 'remote_exp_path', self.top_dir_remote)
         app.config.write()
