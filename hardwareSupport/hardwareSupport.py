@@ -51,7 +51,7 @@ class TempSensor(object):
 
 class LEDMatrix(object):
 
-    def __init__(self, config, color='255;0;0', radius=5, mode='darkfield', linescan_int=16, do_timelapse='None'):
+    def __init__(self, config, color='255;0;0', radius=5, center=(16, 16), mode='darkfield', linescan_int=16, do_timelapse='None'):
         self.port = config.teensy_port
         self.color = color
         self.radius = radius
@@ -59,8 +59,9 @@ class LEDMatrix(object):
         self.linescan_int = linescan_int
         self.do_timelapse = do_timelapse
         self.matrix_width, self.matrix_height = 32, 32
-        self.center_x, self.center_y = 16, 16
+        self.center = ';'.join([str(center[0]), str(center[1])])
         init_commands = [{'matrix_mode': 'set_color', 'color': self.color},
+                         {'matrix_mode': 'set_center', 'center': self.center},
                          {'matrix_mode': 'opto', 'is_on': '0'},
                          {'matrix_mode': 'set_radius', 'radius': str(self.radius)},
                          {'matrix_mode': self.mode}]
@@ -101,6 +102,11 @@ class LEDMatrix(object):
                 elif mode['matrix_mode'] == 'set_color':
                     self.color = mode['color']
                     msg = ';'.join([mode['matrix_mode'], mode['color'], nline])
+                    Logger.debug('LEDMatrix: msg is %s' % msg)
+                    ser.write(msg.encode())
+                elif mode['matrix_mode'] == 'set_center':
+                    self.center = mode['center']
+                    msg = ';'.join([mode['matrix_mode'], mode['center'], nline])
                     Logger.debug('LEDMatrix: msg is %s' % msg)
                     ser.write(msg.encode())
                 elif mode['matrix_mode'] == 'set_radius':

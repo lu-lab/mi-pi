@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=FLEET
+Name=Mi-Pi
 Comment=Microscopy tool
 Icon=/home/pi/mi-pi/icons/simpleicon.png
-Exec=lxterminal -t "Starting FLEET..." -e fleet.sh
+Exec=lxterminal -t "Starting Mi-Pi..." -e mipi.sh
 Type=Application
 Encoding=UTF-8
 Terminal=false

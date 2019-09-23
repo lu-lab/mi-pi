@@ -10,7 +10,7 @@ from kivy.logger import Logger
 
 from hardwareSupport.pivy_camera import CameraSupport
 from fileTransfer import SheetsTransferData
-from hardwareSupport.hardwareSupport import TempSensor, LEDMatrix
+from hardwareSupport.hardwareSupport import TempSensor
 import Updater
 
 
@@ -20,9 +20,8 @@ class Experiment(threading.Thread):
         super().__init__(name='experiment')
         self.interface = interface
 
-        # instantiate the ledMatrix
-        self.ledMatrix = LEDMatrix(interface.teensy_config, color=interface.LEDcolor, radius=interface.matrix_radius,
-                                   mode='darkfield', do_timelapse=self.interface.timelapse_option)
+        # store the ledMatrix
+        self.ledMatrix = self.interface.ledMatrix
 
         # instantiate the camera object
         self.piCam = CameraSupport(interface._camera._camera, interface.config_file, self.interface.imaging_params,

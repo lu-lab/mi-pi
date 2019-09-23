@@ -18,7 +18,7 @@ from settings import expSettings_json, imagingSettings_json, \
 from fileTransfer import ManageLocalFiles
 from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
     CURDIR, CONFIG_FILE
-from hardwareSupport.hardwareSupport import TeensyConfig
+from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
 import experiment
 
 import os
@@ -154,6 +154,14 @@ class Interface(BoxLayout):
         values = self.experiment.sheet.read_sheet(cell_range='A1:L')
         self.experiment.write_sheet_to_dbx(values)
 
+        # copy logs to experiment folder
+        app = App.get_running_app()
+        log_dir = app.config.get('kivy', 'log_dir')
+        log_name = app.config.get('kivy', 'log_name')
+        log_path = '/'.join(['.kivy', log_dir, log_name])
+        file_to = '/'.join([self.local_savepath, log_name])
+        copyfile(log_path, file_to)
+
         src = self.local_savepath
         dest = self.remote_savepath
         p3 = Popen(
@@ -166,12 +174,13 @@ class Interface(BoxLayout):
                 p.wait(timeout=30)
             except TimeoutExpired:
                 p.kill()
+
         ManageLocalFiles.cleanup_files(src, dest, self.rclone_name)
         ManageLocalFiles.cleanup_files(join(src, 'videos/'), join(dest, 'videos/'), self.rclone_name)
         ManageLocalFiles.cleanup_files(join(src, 'images/'), join(dest, 'images/'), self.rclone_name)
 
         # reset folder names in .ini file for next experiment
-        app = App.get_running_app()
+
         app.config.set('experiment settings', 'local_exp_path', self.top_dir_local)
         app.config.set('experiment settings', 'remote_exp_path', self.top_dir_remote)
         app.config.write()
@@ -199,9 +208,14 @@ class Interface(BoxLayout):
         self.hc_image_frequency = app.config.getint('LED matrix', 'hc_image_frequency')
         self.LEDcolor = app.config.get('LED matrix', 'ledcolor')
         self.matrix_radius = app.config.getint('LED matrix', 'matrixradius')
+        self.led_center = (app.config.getint('LED matrix', 'ledx'), app.config.getint('LED matrix', 'ledy'))
         self.spreadsheet_id = app.config.get('experiment settings', 'google_spreadsheet_id')
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
+
+        # instantiate the ledMatrix
+        self.ledMatrix = LEDMatrix(self.teensy_config, color=self.LEDcolor, radius=self.matrix_radius,
+                                   mode='darkfield', center=self.led_center, do_timelapse=self.timelapse_option)
 
         res_string = app.config.get('main image processing', 'image_resolution')
         im_res = tuple(int(i) for i in res_string.split('x'))
@@ -325,7 +339,9 @@ class KivycamApp(App):
             'timelapse_options': 'None',
             'hc_image_frequency': 10,
             'ledcolor': '[255, 0, 0]',
-            'matrixradius': 0
+            'matrixradius': 0,
+            'ledx': 16,
+            'ledy': 16
             })
 
         config.setdefaults('camera settings', {
