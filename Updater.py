@@ -43,6 +43,7 @@ class Updater(multiprocessing.Process):
         self.led_on_time = int(config['main image processing']['led_on_time'])
         if self.led_on_time > self.sheet.time_res:
             self.led_on_time = self.sheet.time_res
+        Logger.info('Updater: LED on time is %s seconds' % self.led_on_time)
         # these parameters will be useful for systems where we're doing online perturbations
         self.check_led_dosage_interval = int(config['main image processing']['check_dosage_interval'])
         # sleep_percent starts as a guess as to percent of time in quiescence over the dosage interval
@@ -126,8 +127,8 @@ class Updater(multiprocessing.Process):
                 elif not self.is_driving_system:
                     self.check_counter += 1
                     if self.check_counter == self.check_led_dosage_interval:
-                        self.paired_led_dosage_percent = (self.led_on_time/60) * self.get_paired_dosage()
-                        self.led_dosage_percent = (self.led_on_time/60) * self.get_dosage()
+                        self.paired_led_dosage_percent = self.get_paired_dosage()
+                        self.led_dosage_percent = self.get_dosage()
                         Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
                                     (self.paired_led_dosage_percent, self.led_dosage_percent))
                         # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
