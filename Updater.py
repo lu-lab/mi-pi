@@ -226,7 +226,8 @@ class Updater(multiprocessing.Process):
             return 0
 
     def get_dosage(self):
-        led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell)
+        led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell,
+                                           spreadsheet_tab=self.sheet.spreadsheet_range)
         try:
             return float(led_dosage[0][0])*(self.led_on_time/self.sheet.time_res)
         except ValueError:
