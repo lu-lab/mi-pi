@@ -37,6 +37,12 @@ class Updater(multiprocessing.Process):
         self.max_difference = max_difference
         self.motion_average = 0
 
+        # check led_on_time to make sure it's less than time resolution of google spreadsheet
+        # if it's more than the google sheets time resolution, set it equal to the google sheets resolution
+        # in seconds
+        self.led_on_time = int(config['main image processing']['led_on_time'])
+        if self.led_on_time > self.sheet.time_res:
+            self.led_on_time = self.sheet.time_res
         # these parameters will be useful for systems where we're doing online perturbations
         self.check_led_dosage_interval = int(config['main image processing']['check_dosage_interval'])
         # sleep_percent starts as a guess as to percent of time in quiescence over the dosage interval
@@ -154,6 +160,11 @@ class Updater(multiprocessing.Process):
                             {'matrix_mode': next_params['imaging_mode']}]
 
             self.ledMatrix.send_command(led_commands)
+            #
+            if next_params['opto_on'] == '1':
+                led_commands = [{'matrix_mode': 'opto', 'is_on': '0'}]
+                led_timer = threading.Timer(self.led_on_time, self.ledMatrix.send_command, args=[led_commands])
+                led_timer.start()
 
         # TODO pressure system control
         # try:
@@ -207,14 +218,14 @@ class Updater(multiprocessing.Process):
         paired_led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell,
                                                   spreadsheet_tab=self.sheet.paired_spreadsheet_range)
         try:
-            return float(paired_led_dosage[0][0])
+            return float(paired_led_dosage[0][0])*(self.led_on_time/self.sheet.time_res)
         except ValueError:
             return 0
 
     def get_dosage(self):
         led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell)
         try:
-            return float(led_dosage[0][0])
+            return float(led_dosage[0][0])*(self.led_on_time/self.sheet.time_res)
         except ValueError:
             Logger.debug('Updater: unable to get led dosage')
             return 0
