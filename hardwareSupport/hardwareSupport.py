@@ -74,7 +74,7 @@ class LEDMatrix(object):
             for mode in mode_list:
                 ser.flushInput()
                 ser.flushOutput()
-                time.sleep(0.05)
+                time.sleep(0.5)
                 if mode['matrix_mode'] == 'solid':
                     msg = ';'.join([mode['matrix_mode'], nline])
                     Logger.debug('LEDMatrix: msg is %s' % msg)

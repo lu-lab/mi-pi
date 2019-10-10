@@ -69,6 +69,7 @@ class Updater(multiprocessing.Process):
         # perform the first update right away
         # get next set of params as a dict.
         next_params, success = self.sheet.get_params(self.cur_row)
+        next_params['opto_on'] = str(0)
         Logger.debug('Updater: Next parameters are: %s' % next_params)
         Logger.info('Updater: Start time is: %s', start_time)
         self.update(next_params)
@@ -153,18 +154,19 @@ class Updater(multiprocessing.Process):
 
         if self.timelapse_option == 'None':
             Logger.debug("Updater: updating with next parameters %s" % next_params)
-            led_commands = [{'matrix_mode': 'set_color', 'color': ';'.join(
+            led_commands = [{'matrix_mode': 'opto', 'is_on': next_params['opto_on']},
+                            {'matrix_mode': 'set_color', 'color': ';'.join(
                 [next_params['matrix_r'], next_params['matrix_g'], next_params['matrix_b']])},
-                            {'matrix_mode': 'opto', 'is_on': next_params['opto_on']},
                             {'matrix_mode': 'set_radius', 'radius': next_params['radius']},
                             {'matrix_mode': next_params['imaging_mode']}]
 
             self.ledMatrix.send_command(led_commands)
             #
             if next_params['opto_on'] == '1':
-                led_commands = [{'matrix_mode': 'opto', 'is_on': '0'}]
+                led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
                 led_timer = threading.Timer(self.led_on_time, self.ledMatrix.send_command, args=[led_commands])
                 led_timer.start()
+                Logger.info('Updater: LEDs cycled off')
 
         # TODO pressure system control
         # try:
