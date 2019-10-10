@@ -126,8 +126,8 @@ class Updater(multiprocessing.Process):
                 elif not self.is_driving_system:
                     self.check_counter += 1
                     if self.check_counter == self.check_led_dosage_interval:
-                        self.paired_led_dosage_percent = self.get_paired_dosage()
-                        self.led_dosage_percent = self.get_dosage()
+                        self.paired_led_dosage_percent = (self.led_on_time/60) * self.get_paired_dosage()
+                        self.led_dosage_percent = (self.led_on_time/60) * self.get_dosage()
                         Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
                                     (self.paired_led_dosage_percent, self.led_dosage_percent))
                         # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
