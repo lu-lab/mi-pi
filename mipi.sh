@@ -26,6 +26,8 @@ else
     rclone config
 fi
 
+export PYTHONPATH=$PYTHONPATH:'/home/pi/models/research':'/home/pi/models/research/slim'
+
 echo "Opening FLEET..."
 
 python3 main.py
