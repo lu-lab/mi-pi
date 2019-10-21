@@ -4,7 +4,7 @@ from os.path import join
 from kivy.logger import Logger
 import configparser
 import subprocess
-import threading
+import multiprocessing
 
 import psutil
 import cv2
@@ -26,12 +26,22 @@ def build_stream_command(fps, youtube_link, youtube_key):
     return stream_cmd
 
 
-class CameraSupport(object):
+class CameraSupport(multiprocessing.Process):
 
-    def __init__(self, camera, config_file, image_processing_params, ledMatrix, stop_event, video_length):
+    def __init__(self, camera, config_file, image_processing_params,
+                 timelapse_option, ledMatrix, stop_exp_event,
+                 stop_cam_event, video_length, end_time, motion_list,
+                 motion_list_lock, egg_count_list, egg_count_list_lock):
+        super(CameraSupport, self).__init__()
         config = configparser.ConfigParser()
         config.read(config_file)
-        self.stop_event = stop_event
+        self.stop_exp_event = stop_exp_event
+        self.stop_cam_event = stop_cam_event
+        self.motion_list = motion_list
+        self.motion_list_lock = motion_list_lock
+        self.egg_count_list = egg_count_list
+        self.egg_count_list_lock = egg_count_list_lock
+        self.end_time = end_time
         self.ledMatrix = ledMatrix
 
         self.fps = config['camera settings']['fps']
@@ -45,15 +55,16 @@ class CameraSupport(object):
 
         self.image_processing_mode = config['main image processing']['image_processing_mode']
         self.image_processing_params = image_processing_params
+        self.image_processing_params['nn_count_eggs'] = bool(int(config['neural net']['nn_count_eggs']))
         self.img_pool = None
 
         self.image_frequency = int(config['main image processing']['image_frequency'])
         self.hc_image_frequency = int(config['LED matrix']['hc_image_frequency'])
+        self.timelapse_option = timelapse_option
 
         self.save_dir = config['experiment settings']['local_exp_path']
         self.video_save_dir = join(self.save_dir, 'videos')
-        self.image_save_dir = join(self.save_dir, 'images')
-        Logger.info('save_dir is %s, image_save_dir is %s' % (self.save_dir, self.image_save_dir))
+        self.image_processing_params['img_dir'] = join(self.save_dir, 'images')
 
         self.end_time = None
         Logger.info('webstream is %s, image processing mode is %s' % (self.webstream, self.image_processing_mode))
@@ -81,26 +92,33 @@ class CameraSupport(object):
             self.max_difference = (width * height) / 16
 
         Logger.info('Camera: video path %s' % self.video_save_dir)
-        Logger.info('Camera: images path %s' % self.image_save_dir)
+        Logger.info('Camera: images path %s' % self.image_processing_params['img_dir'])
         Logger.info('Camera: local init success')
 
-    def capture_video(self, end_time, motion_queue):
-        self.end_time = end_time
+    def run(self):
 
-        if not self.webstream and self.image_processing_mode == 'None':
-            self.video_only(motion_queue)
+        if self.timelapse_option == 'None':
+            if not self.webstream and self.image_processing_mode == 'None':
+                self.video_only()
 
-        elif self.webstream and self.image_processing_mode == 'None':
-            self.video_and_webstream(motion_queue)
+            elif self.webstream and self.image_processing_mode == 'None':
+                self.video_and_webstream()
 
-        elif self.image_processing_mode != 'None' and not self.webstream:
-            self.video_and_motion(motion_queue)
+            elif self.image_processing_mode != 'None' and not self.webstream:
+                self.video_and_motion()
 
-        elif self.webstream and self.image_processing_mode != 'None':
-            self.video_and_motion_and_webstream(motion_queue)
+            elif self.webstream and self.image_processing_mode != 'None':
+                self.video_and_motion_and_webstream()
+
+        elif self.timelapse_option == 'linescan':
+            self.linescan_timelapse()
+
+        elif self.timelapse_option == 'brightfield' or self.timelapse_option == 'darkfield':
+            self.timelapse()
+
         return
 
-    def video_only(self, motion_queue):
+    def video_only(self):
         Logger.info('Camera: Video capture only')
         # record a sequence of videos until the end of the experiment
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
@@ -108,7 +126,7 @@ class CameraSupport(object):
             try:
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     self.camera.wait_recording(self.video_length, splitter_port=2)
                     timestr = time.strftime("%Y%m%d_%H%M%S")
                     videofile = "VID_{}.h264".format(timestr)
@@ -120,7 +138,7 @@ class CameraSupport(object):
                 # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
                 self.camera.close()
-                self.video_only(motion_queue)
+                self.video_only()
             finally:
                 # wait a few seconds to make sure everything is wrapped up
                 time.sleep(5)
@@ -131,9 +149,9 @@ class CameraSupport(object):
                     # the splitter port has already stopped recording
                     pass
                 Logger.info('Camera: recording stopped')
-                motion_queue.put(None)
+                self.stop_exp_event.set()
 
-    def video_and_webstream(self, motion_queue):
+    def video_and_webstream(self):
         Logger.info('Camera: Video and youtube livestream')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
@@ -143,7 +161,7 @@ class CameraSupport(object):
             try:
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     self.camera.wait_recording(self.video_length, splitter_port=2)
                     # if there's an issue with the stream and it closes,
                     # just ignore it and continue recording to disk
@@ -165,7 +183,7 @@ class CameraSupport(object):
                 # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
                 self.camera.close()
-                self.video_and_webstream(motion_queue)
+                self.video_and_webstream()
             finally:
                 # wait a few seconds to make sure everything is wrapped up
                 time.sleep(5)
@@ -182,12 +200,13 @@ class CameraSupport(object):
                 except subprocess.TimeoutExpired:
                     stream_pipe.kill()
                 Logger.info('Camera: recording stopped')
-                motion_queue.put(None)
+                self.stop_exp_event.set()
 
-    def video_and_motion(self, motion_queue):
+    def video_and_motion(self):
         Logger.info('Camera: video and local motion detection')
         cur_image = CurrentImage(self.image_processing_params)
-        self.img_pool = ProcessorPool(3, cur_image, motion_queue, self.image_save_dir)
+        self.img_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
+                                      self.egg_count_list, self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
@@ -203,7 +222,7 @@ class CameraSupport(object):
                 self.img_pool.processor.frame_event.set()
                 Logger.debug('Camera: frame_event set')
                 t_image = 0
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     Logger.debug('Camera: video recording started')
                     t_video = 0
                     while t_video < self.video_length:
@@ -255,7 +274,7 @@ class CameraSupport(object):
                 # if for whatever reason the picamera isn't recording, restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
                 self.camera.close()
-                self.video_and_motion(motion_queue)
+                self.video_and_motion()
             finally:
                 # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
@@ -267,14 +286,14 @@ class CameraSupport(object):
                     pass
                 Logger.info('Camera: recording stopped')
                 self.img_pool.exit()
-                motion_queue.put(None)
+                self.stop_exp_event.set()
 
-    def video_and_motion_and_webstream(self, motion_queue):
+    def video_and_motion_and_webstream(self):
         Logger.info('Camera: video, youtube live stream, and local motion detection')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
-        self.img_pool = ProcessorPool(3, cur_image, motion_queue, self.image_save_dir)
+        self.img_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock, self.egg_count_list, self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
@@ -288,7 +307,7 @@ class CameraSupport(object):
                 self.img_pool.frame_queue.put(img_counter)
                 self.img_pool.processor.frame_event.set()
                 t_image = 0
-                while not self.is_exp_done() and not self.stop_event.is_set():
+                while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     t_video = 0
                     while t_video < self.video_length:
                         self.camera.wait_recording(1, splitter_port=2)
@@ -336,7 +355,7 @@ class CameraSupport(object):
                 # if for whatever reason the picamera isn't recording, restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera. Error is %s' % err)
                 self.camera.close()
-                self.video_and_motion_and_webstream(motion_queue)
+                self.video_and_motion_and_webstream()
             finally:
                 # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
@@ -354,7 +373,7 @@ class CameraSupport(object):
                     stream_pipe.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     stream_pipe.kill()
-                motion_queue.put(None)
+                self.stop_exp_event.set()
 
     def calibrate_brightness(self):
         # figure out the size of the numpy matrix to capture to
@@ -391,11 +410,11 @@ class CameraSupport(object):
         # turn the blue light back off.
         self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
 
-        imgfile1 = join(self.image_save_dir, "calibrate_1.png")
+        imgfile1 = join(self.image_processing_params['img_dir'], "calibrate_1.png")
         cv2.imwrite(imgfile1, im1)
-        imgfile2 = join(self.image_save_dir, "calibrate_2.png")
+        imgfile2 = join(self.image_processing_params['img_dir'], "calibrate_2.png")
         cv2.imwrite(imgfile2, im2)
-        imgfile3 = join(self.image_save_dir, "calibrate_3.png")
+        imgfile3 = join(self.image_processing_params['img_dir'], "calibrate_3.png")
         cv2.imwrite(imgfile3, im3)
 
         self.width, self.height = self.image_processing_params['image_resolution']
@@ -404,8 +423,7 @@ class CameraSupport(object):
         Logger.info('Camera: movement is %s, LED difference is %s' % (mvmnt, LED_difference))
         return mvmnt, LED_difference
 
-    def linescan_timelapse(self, end_time, motion_queue):
-        self.end_time = end_time
+    def linescan_timelapse(self):
         ymax = self.ledMatrix.center_y + self.ledMatrix.radius
         ymin = self.ledMatrix.center_y - self.ledMatrix.radius
         Logger.debug('Camera: linescan ymin is %s, linescan ymax is %s' % (str(ymin), str(ymax)))
@@ -431,16 +449,15 @@ class CameraSupport(object):
                 self.ledMatrix.linescan_int = i
                 self.ledMatrix.send_command([{'matrix_mode': 'linescan_bright'}])
                 fn = str(counter) + '_' + str(i)
-                imgfile = join(self.image_save_dir, "IMG_{}.png".format(fn))
+                imgfile = join(self.image_processing_params['img_dir'], "IMG_{}.png".format(fn))
                 time.sleep(self.hc_image_frequency)
                 self.camera.capture(imgfile)
             counter += 1
         # send the stop signal to the rest of the app
-        motion_queue.put(None)
+        self.stop_exp_event.set()
 
-    def timelapse(self, end_time, motion_queue, matrix_mode):
-        self.end_time = end_time
-        self.ledMatrix.send_command([{'matrix_mode': matrix_mode}])
+    def timelapse(self):
+        self.ledMatrix.send_command([{'matrix_mode': self.timelapse_option}])
 
         time.sleep(2)
         # set up for consistent imaging
@@ -458,12 +475,12 @@ class CameraSupport(object):
         counter = 1
         while not self.is_exp_done():
             fn = str(counter)
-            imgfile = join(self.image_save_dir, "IMG_{}.png".format(fn))
+            imgfile = join(self.image_processing_params['img_dir'], "IMG_{}.png".format(fn))
             time.sleep(self.hc_image_frequency)
             self.camera.capture(imgfile)
             counter += 1
 
-        motion_queue.put(None)
+        self.stop_exp_event.set()
 
     def is_exp_done(self):
         cur_time = datetime.now()

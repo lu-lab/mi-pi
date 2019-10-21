@@ -14,7 +14,8 @@ import random
 
 class Updater(multiprocessing.Process):
 
-    def __init__(self, config_file, led_matrix, temp_sensor, sheet, motion_list, max_difference):
+    def __init__(self, config_file, led_matrix, temp_sensor, sheet, motion_list,
+                 motion_list_lock, egg_count_list, egg_count_list_lock, max_difference):
         super(Updater, self).__init__()
         config = configparser.ConfigParser()
         config.read(config_file)
@@ -25,6 +26,9 @@ class Updater(multiprocessing.Process):
         self.exp_length = int(float(config['experiment settings']['experimentlength']))
         self.timelapse_option = config['LED matrix']['timelapse_options']
         self.motion_list = motion_list
+        self.motion_list_lock = motion_list_lock
+        self.egg_count_list = egg_count_list
+        self.egg_count_list_lock = egg_count_list_lock
         self.cur_row = self.sheet.start_row
         self.cur_row_lock = threading.Lock()
         self.local_savepath = config['experiment settings']['local_exp_path']
@@ -34,6 +38,8 @@ class Updater(multiprocessing.Process):
         self.image_processing_mode = config['main image processing']['image_processing_mode']
         self.motion_with_feedback = bool(int(config['main image processing']['motion_with_feedback']))
         self.num_pixel_threshold = int(config['image delta']['num_pixel_threshold'])
+        self.nn_motion_thresh = float(config['neural net']['nn_distance_thresh'])
+        self.nn_count_eggs = bool(int(config['neural net']['nn_count_eggs']))
         self.max_difference = max_difference
         self.motion_average = 0
 
@@ -89,69 +95,24 @@ class Updater(multiprocessing.Process):
 
         # when next timepoint is reached, update all parameters, record data to google sheets
         if self.image_processing_mode != 'None':
-            # calculate average motion
-            motion_list = self.motion_list[:]
-            if len(motion_list) > 0:
-                # the upper bound is mostly to account for led illumination
-                # drastically changing the delta image calculation
-                self.motion_average = float(mean(motion_list))
-                if self.motion_average > self.max_difference:
-                    # the upper bound is mostly to account for led illumination
-                    # drastically changing the delta image calculation
-                    self.motion_average = 'Above max'
-            else:
-                self.motion_average = 'None'
-
+            # grab the current motion list
+            with self.motion_list_lock:
+                motion_list = self.motion_list[:].deepcopy()
+                self.motion_list.clear()
+            # use motion list to decide whether to turn the leds on
             if self.image_processing_mode == 'image delta':
-                # update opto parameters based on motion (but only if this is the driving system)
-                if self.is_driving_system:
-                    if self.motion_average != 'None' and self.motion_average != 'Above max':
-                        # currently configured to turn light on when motion is low
-                        if (self.motion_average > self.num_pixel_threshold) or not self.motion_with_feedback:
-                            next_params['opto_on'] = str(0)
-                        else:
-                            rand_int = random.randint(1, 100)
-                            if rand_int <= self.dwell_dosage_correction:
-                                next_params['opto_on'] = str(1)
-                            else:
-                                next_params['opto_on'] = str(0)
-                    elif self.motion_average == 'None' or self.motion_average == 'Above max':
-                        next_params['opto_on'] = str(0)
+                next_params['opto_on'] = self.image_delta_motion_decision(motion_list)
 
-                    # if we exceed the max exposure percent, keep the light off
-                    if self.led_dosage_percent > self.max_exposure:
-                        next_params['opto_on'] = str(0)
-                        Logger.info('Updater: exceeded max exposure')
-
-                # update opto parameters based on the paired system's led dosage
-                elif not self.is_driving_system:
-                    self.check_counter += 1
-                    if self.check_counter == self.check_led_dosage_interval:
-                        self.paired_led_dosage_percent = self.get_paired_dosage()
-                        self.led_dosage_percent = self.get_dosage()
-                        Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
-                                    (self.paired_led_dosage_percent, self.led_dosage_percent))
-                        # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
-                        self.sleep_percent = self.paired_led_dosage_percent + \
-                            (self.paired_led_dosage_percent - self.led_dosage_percent)
-                        Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
-                        self.check_counter = 0
-
-                    rand_int = random.randint(1, 100)
-                    if rand_int <= self.sleep_percent and self.motion_with_feedback:
-                        # turn on the light
-                        next_params['opto_on'] = str(1)
-                    else:
-                        next_params['opto_on'] = str(0)
-
-            elif self.image_processing_mode == 'image thresholding':
-                self.data['area'] = 'work in progress'
+            elif self.image_processing_mode == 'neural net':
+                next_params['opto_on'] = self.neural_net_motion_decision(motion_list)
+                if self.nn_count_eggs:
+                    with self.egg_count_list_lock:
+                        egg_count = mean(self.egg_count_list[:])
+                        self.data['egg_count'] = egg_count
+                        self.egg_count_list.clear()
 
             self.data['motion'] = self.motion_average
             self.data['opto_on'] = next_params['opto_on']
-
-            # re-start motion list
-            self.motion_list[:] = []
 
         if self.timelapse_option == 'None':
             Logger.debug("Updater: updating with next parameters %s" % next_params)
@@ -258,6 +219,110 @@ class Updater(multiprocessing.Process):
         except TimeoutExpired:
             p.kill()
         ManageLocalFiles.cleanup_files(source, join(self.remote_savepath, 'images'), self.rclone_name)
+
+    def neural_net_motion_decision(self, motion_list):
+        # set up a default opto_on to return
+        opto_on = str(0)
+
+        if len(motion_list) > 0:
+            self.motion_average = float(mean(motion_list))
+        else:
+            self.motion_average = 'None'
+
+        # update opto_on based on motion if this is the driving system
+        if self.is_driving_system:
+            if self.motion_average != 'None':
+                # if worm's movement is above the set threshold, turn the light off
+                if self.motion_average > self.nn_motion_thresh:
+                    opto_on = str(0)
+                else:
+                    rand_int = random.randint(1, 100)
+                    if rand_int <= self.dwell_dosage_correction:
+                        opto_on = str(1)
+                    else:
+                        opto_on = str(0)
+            else:
+                opto_on = str(0)
+
+        # if this isn't the driving system
+        else:
+            self.check_counter += 1
+            if self.check_counter == self.check_led_dosage_interval:
+                self.paired_led_dosage_percent = self.get_paired_dosage()
+                self.led_dosage_percent = self.get_dosage()
+                Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
+                            (self.paired_led_dosage_percent, self.led_dosage_percent))
+                # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
+                self.sleep_percent = self.paired_led_dosage_percent + \
+                                     (self.paired_led_dosage_percent - self.led_dosage_percent)
+                Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
+                self.check_counter = 0
+
+            rand_int = random.randint(1, 100)
+            if rand_int <= self.sleep_percent and self.motion_with_feedback:
+                # turn on the light
+                opto_on = str(1)
+            else:
+                opto_on = str(0)
+        return opto_on
+
+    def image_delta_motion_decision(self, motion_list):
+        # set up a default opto_on to return
+        opto_on = str(0)
+
+        if len(motion_list) > 0:
+            # the upper bound is mostly to account for led illumination
+            # drastically changing the delta image calculation
+            self.motion_average = float(mean(motion_list))
+            if self.motion_average > self.max_difference:
+                # the upper bound is mostly to account for led illumination
+                # drastically changing the delta image calculation
+                self.motion_average = 'Above max'
+        else:
+            self.motion_average = 'None'
+
+        # update opto parameters based on motion (but only if this is the driving system)
+        if self.is_driving_system:
+            if self.motion_average != 'None' and self.motion_average != 'Above max':
+                # currently configured to turn light on when motion is low
+                if (self.motion_average > self.num_pixel_threshold) or not self.motion_with_feedback:
+                    opto_on = str(0)
+                else:
+                    rand_int = random.randint(1, 100)
+                    if rand_int <= self.dwell_dosage_correction:
+                        opto_on = str(1)
+                    else:
+                        opto_on = str(0)
+            elif self.motion_average == 'None' or self.motion_average == 'Above max':
+                opto_on = str(0)
+
+            # if we exceed the max exposure percent, keep the light off
+            if self.led_dosage_percent > self.max_exposure:
+                opto_on = str(0)
+                Logger.info('Updater: exceeded max exposure')
+
+        # update opto parameters based on the paired system's led dosage
+        elif not self.is_driving_system:
+            self.check_counter += 1
+            if self.check_counter == self.check_led_dosage_interval:
+                self.paired_led_dosage_percent = self.get_paired_dosage()
+                self.led_dosage_percent = self.get_dosage()
+                Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
+                            (self.paired_led_dosage_percent, self.led_dosage_percent))
+                # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
+                self.sleep_percent = self.paired_led_dosage_percent + \
+                                     (self.paired_led_dosage_percent - self.led_dosage_percent)
+                Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
+                self.check_counter = 0
+
+            rand_int = random.randint(1, 100)
+            if rand_int <= self.sleep_percent and self.motion_with_feedback:
+                # turn on the light
+                opto_on = str(1)
+            else:
+                opto_on = str(0)
+
+        return opto_on
 
 
 class RepeatingTimer(threading.Thread):

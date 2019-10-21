@@ -6,18 +6,15 @@ from kivy.app import App
 from kivy.clock import mainthread
 from kivy.logger import Logger
 from kivy.properties import StringProperty, BooleanProperty,\
-    ListProperty, NumericProperty, DictProperty, ReferenceListProperty
+     NumericProperty, DictProperty, ReferenceListProperty
 from kivy.uix.settings import SettingsWithSidebar
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.image import Image
-from kivy.graphics.texture import Texture
-from kivy.uix.textinput import TextInput
 
 from settings import expSettings_json, imagingSettings_json, \
     pressureSettings_json, imageProcessingSettings_json
 from fileTransfer import ManageLocalFiles
 from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
-    CURDIR, CONFIG_FILE, LOG_DIR, LOG_NAME
+    CURDIR, CONFIG_FILE, LOG_DIR
 from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
 import experiment
 
@@ -29,6 +26,7 @@ import random
 import time
 import datetime
 import threading
+import multiprocessing
 from shutil import copyfile
 import logging
 from subprocess import Popen, TimeoutExpired
@@ -45,8 +43,9 @@ class Interface(BoxLayout):
     im_res_x = NumericProperty(640)
     im_res_y = NumericProperty(480)
     im_res = ReferenceListProperty(im_res_x, im_res_y)
-    stop_event = threading.Event()
-    stop_cam = threading.Event()
+    process_manager = multiprocessing.Manager()
+    stop_event = process_manager.Event()
+    stop_cam = process_manager.Event()
 
     def __init__(self, **kwargs):
         super(Interface, self).__init__(**kwargs)
@@ -137,16 +136,19 @@ class Interface(BoxLayout):
             # self.experiment.t_motion_queue_check.join()
             # Logger.debug('Interface: motion queue closed')
             self.experiment.update_process.join()
-            Logger.debug('Interface: update_process closed')
+            self.experiment.piCam.join()
+            Logger.debug('Interface: update process and camera closed')
 
         # the experiment has been ended prematurely
         else:
             # we'll have to terminate the update process
             self.experiment.update_process.terminate()
-            Logger.debug('Interface: update_process terminated')
+            # but we've waited for the camera to stop recording, so we should be able to join it
+            self.experiment.piCam.join()
+            Logger.debug('Interface: update process terminated and camera joined')
 
-        self.experiment.t_camera.join()
-        Logger.debug('Interface: camera closed')
+        # self.experiment.t_camera.join()
+        # Logger.debug('Interface: camera closed')
 
         # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
         max_row = self.explength + self.experiment.sheet.start_row
@@ -234,21 +236,9 @@ class Interface(BoxLayout):
         self.image_processing_mode = app.config.get('main image processing', 'image_processing_mode')
         self.imaging_params['image_processing_mode'] = self.image_processing_mode
 
-        thresh_block_size = app.config.getint('image thresholding', 'thresh_block_size')
-        thresh_block_size = max(3, thresh_block_size)
-        if thresh_block_size % 2 == 0:
-            thresh_block_size += 1  # this value must be odd
-        self.imaging_params['thresh_block_size'] = thresh_block_size
-
-        self.imaging_params['keep_border_data'] = bool(app.config.getint('image thresholding', 'keep_border_data'))
-        self.imaging_params['min_area'] = app.config.getint('image thresholding', 'min_area')
-        self.imaging_params['max_area'] = app.config.getint('image thresholding', 'max_area')
-        self.imaging_params['dilation_size'] = app.config.getint('image thresholding', 'dilation_size')
-        self.imaging_params['xmin'] = app.config.getint('image thresholding', 'xmin')
-        self.imaging_params['xmax'] = app.config.getint('image thresholding', 'xmax')
-        self.imaging_params['ymin'] = app.config.getint('image thresholding', 'ymin')
-        self.imaging_params['ymax'] = app.config.getint('image thresholding', 'ymax')
         self.imaging_params['save_images'] = bool(app.config.getint('main image processing', 'save_images'))
+        self.imaging_params['save_processed_images'] = \
+            bool(app.config.getint('main image processing', 'save_processed_images'))
 
         if paired_system_id in SYSTEM_IDS and self.image_processing_mode != 'None':
             self.paired_system_id = paired_system_id
@@ -371,28 +361,21 @@ class KivycamApp(App):
             'max_exposure': 30,
             'image_resolution': '640x480',
             'image_frequency': 15,
-            'save_images': 0,
+            'save_images': 1,
+            'save_processed_images': 1,
             'is_driving_system': 1,
             'check_dosage_interval': 360,
             'paired_systemid': 'test2'
         })
 
+        config.setdefaults('neural net', {
+            'nn_count_eggs': 0,
+            'nn_distance_thresh': 10
+        })
+
         config.setdefaults('image delta', {
             'delta_threshold': 4,
             'num_pixel_threshold': 2000
-        })
-
-        config.setdefaults('image thresholding', {
-            'thresh_block_size': 61,
-            'keep_border_data': 0,
-            'image_threshold': 10,
-            'min_area': 50,
-            'max_area': 600,
-            'dilation_size': 5,
-            'xmin': 0,
-            'xmax': 480,
-            'ymin': 0,
-            'ymax': 640
         })
 
     def build_settings(self, settings):

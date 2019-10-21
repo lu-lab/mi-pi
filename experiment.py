@@ -23,10 +23,6 @@ class Experiment(threading.Thread):
         # store the ledMatrix
         self.ledMatrix = self.interface.ledMatrix
 
-        # instantiate the camera object
-        self.piCam = CameraSupport(interface._camera._camera, interface.config_file, self.interface.imaging_params,
-                                   self.ledMatrix, self.interface.stop_cam, self.interface.video_length)
-
         # at beginning of experiment, populate first Date-Time field in google sheet
         # with 'now' and propagate to end of the experiment field. Experimental Time should
         # be already filled
@@ -36,11 +32,12 @@ class Experiment(threading.Thread):
         param_col_dict = {'imaging_mode': 'C', 'matrix_r': 'D', 'matrix_g': 'E',
                           'matrix_b': 'F', 'radius': 'G', 'opto_on': 'H'}
         data_col_dict = {'temperature': 'I', 'humidity': 'J'}
-        if self.interface.image_processing_mode != 'None' and interface.is_driving_system:
+        if self.interface.image_processing_mode != 'None':
             data_col_dict['opto_on'] = 'H'
             data_col_dict['motion'] = 'K'
-            if self.interface.image_processing_mode == 'image thresholding':
-                data_col_dict['area'] = 'L'
+            if self.interface.image_processing_mode == 'neural net':
+                if self.interface.nn_count_eggs:
+                    data_col_dict['egg_count'] = 'L'
         time_res_cell = 'B2'
         led_dosage_cell = 'J2'
         # we'll make a shared resource that contains the current row of the spreadsheet so that the motion updater
@@ -61,23 +58,27 @@ class Experiment(threading.Thread):
         # instantiate the temperature/humidity sensor objects
         self.tempSensor = TempSensor(interface.teensy_config)
 
-        # queue for motion information from camera class
-        self.cam_queue = queue.Queue(maxsize=1)
-        self.mgr = multiprocessing.Manager()
-        self.motion_list = self.mgr.list()
-        self.update_process = Updater.Updater(interface.config_file, self.ledMatrix, self.tempSensor,
-                                              self.sheet, self.motion_list, self.piCam.max_difference)
-        if self.interface.timelapse_option == 'None':
-            self.t_camera = threading.Thread(name='camera', target=self.piCam.capture_video,
-                                             args=(self.exp_end, self.cam_queue))
-        elif self.interface.timelapse_option == 'linescan':
-            self.t_camera = threading.Thread(name='camera', target=self.piCam.linescan_timelapse,
-                                             args=(self.exp_end, self.cam_queue))
-        else:
-            self.t_camera = threading.Thread(name='camera', target=self.piCam.timelapse,
-                                             args=(self.exp_end, self.cam_queue, self.interface.timelapse_option))
+        # use the process_manager created in the interface class to store a few lists
+        self.motion_list = self.interface.process_manager.list()
+        self.motion_list_lock = self.interface.process_manager.Lock()
+        self.egg_count_list = self.interface.process_manager.list()
+        self.egg_count_list_lock = self.interface.process_manager.Lock()
 
-        self.t_motion_queue_check = threading.Thread(name='motion_queue_check', target=self.check_queue)
+        # instantiate the camera object
+        self.piCam = CameraSupport(interface._camera._camera, interface.config_file, self.interface.imaging_params,
+                                   self.interface.timelapse_option, self.ledMatrix,
+                                   self.interface.stop_event, self.interface.stop_cam,
+                                   self.interface.video_length, self.exp_end,
+                                   self.motion_list, self.motion_list_lock,
+                                   self.egg_count_list, self.egg_count_list_lock)
+
+        # instantiate the updater process
+        self.update_process = Updater.Updater(interface.config_file, self.ledMatrix, self.tempSensor,
+                                              self.sheet, self.motion_list, self.motion_list_lock,
+                                              self.egg_count_list, self.egg_count_list_lock,
+                                              self.piCam.max_difference)
+
+        # self.t_motion_queue_check = threading.Thread(name='motion_queue_check', target=self.check_queue)
         Logger.info('Experiment: start time is %s' % self.exp_start.strftime("%H:%M:%S %B %d, %Y"))
         Logger.info('Experiment: end time is %s' % self.exp_end.strftime("%H:%M:%S %B %d, %Y"))
         Logger.info('Experiment: Initialization complete')
@@ -85,8 +86,8 @@ class Experiment(threading.Thread):
     def run(self):
         # start updater process, end-of-experiment timer thread, and camera thread
         self.update_process.start()
-        self.t_motion_queue_check.start()
-        self.t_camera.start()
+        # self.t_motion_queue_check.start()
+        self.piCam.start()
         Logger.info('Experiment: Threads and processes started')
 
     def check_queue(self):

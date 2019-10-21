@@ -1,0 +1,13 @@
+item {
+    id: 1
+    name: 'worm'
+}
+
+item {
+    id: 2
+    name: 'egg'
+}
+item {
+    id: 3
+    name: 'arena'
+}

@@ -5,8 +5,10 @@ import queue
 import io
 from kivy.logger import Logger
 import time
+
 from statistics import mean
 from os.path import join
+from imageProcessing.CNN import CNN
 
 import picamera
 import picamera.array
@@ -107,30 +109,44 @@ def get_contour_areas(img, imaging_parameters):
     return mean(goodAreas)
 
 
-def delta_movement(im1, im2, imaging_parameters):
+def delta_movement(im1, im2, frame_no, imaging_parameters):
     diff1 = cv2.subtract(im1, im2)
     diff1 = cv2.morphologyEx(diff1, cv2.MORPH_OPEN, imaging_parameters['strel'])
 
     diff2 = cv2.subtract(im2, im1)
     diff2 = cv2.morphologyEx(diff2, cv2.MORPH_OPEN, imaging_parameters['strel'])
-    # fp2 = join(self.dir, 'processed', fn)
-    # cv2.imwrite(fp2, diff)
+
     diff1 = diff1 > imaging_parameters['delta_threshold']
     diff2 = diff2 > imaging_parameters['delta_threshold']
+
     mvmnt = np.sum(diff1) + np.sum(diff2)
+
+    if imaging_parameters['save_processed_images']:
+        diff1.dtype = 'uint8'
+        diff2.dtype = 'uint8'
+        im_diff = cv2.add(diff1*255, diff2*255)
+        im_diff = cv2.cvtColor(im_diff, cv2.COLOR_GRAY2RGB)
+        fn = 'img' + str(frame_no) + '.png'
+        fp2 = join(imaging_parameters['img_dir'], 'processed', fn)
+        cv2.imwrite(fp2, im_diff)
+
     return mvmnt
 
 
 class ProcessorPool:
 
-    def __init__(self, num_threads, cur_image, motion_queue, img_dir):
+    def __init__(self, num_threads, cur_image,
+                 motion_list, motion_list_lock,
+                 egg_count_list, egg_count_list_lock):
         self.done = False
         self.cur_image = cur_image
         self.lock = threading.Lock()
-        self.motion_queue = motion_queue
+        self.motion_list = motion_list
+        self.motion_list_lock = motion_list_lock
+        self.egg_count_list = egg_count_list
+        self.egg_count_list_lock = egg_count_list_lock
         self.frame_queue = queue.Queue(maxsize=num_threads)
         self.processor = None
-        self.img_dir = img_dir
         self.pool = [ImageProcessor(self) for i in range(num_threads)]
         Logger.info('ProcessorPool: initialized')
 
@@ -180,7 +196,6 @@ class ImageProcessor(threading.Thread):
         self.terminated = False
         self.stream = io.BytesIO()
         self.owner = owner
-        self.dir = self.owner.img_dir
         self.start()
 
     def run(self):
@@ -215,29 +230,76 @@ class ImageProcessor(threading.Thread):
 
                                 im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
                                 if img_parameters['save_images']:
-                                    fp = join(self.dir, 'unprocessed', 'img1.png')
+                                    fp = join(img_parameters['img_dir'], 'unprocessed', 'img1.png')
                                     cv2.imwrite(fp, im)
 
-                                # Logger.info('ImageProcessor: first image converted to gray')
-                                self.owner.cur_image.set_image(im)
-                                # Logger.info('ImageProcessor: first frame set')
+                                if self.owner.cur_image.image_processing_mode == 'neural net':
+                                    # get worm location and set it
+                                    with self.owner.cur_image.CNN.lock:
+                                        worm_loc_x, worm_loc_y = self.owner.cur_image.CNN.get_worm_location(im)
+                                    self.owner.cur_image.set_worm_loc(worm_loc_x, worm_loc_y)
+
+                                elif self.owner.cur_image.image_processing_mode == 'image delta':
+                                    self.owner.cur_image.set_image(im)
+
 
                         # if it's past the first frame, convert to gray and calculate the movement delta between this
                         # and the previous image and send that info to the Update process via the motion_queue
                         else:
-                                # Read the new image and the old one and subtract
-                                im1 = self.owner.cur_image.im
+                                # convert new image to gray
+
                                 im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
                                 if img_parameters['save_images']:
                                     fn = 'img' + str(frame_no) + '.png'
-                                    fp = join(self.dir, 'unprocessed', fn)
+                                    fp = join(img_parameters['img_dir'], 'unprocessed', fn)
                                     cv2.imwrite(fp, im)
 
-                                self.owner.cur_image.set_image(im)
-                                mvmnt = delta_movement(im1, im, img_parameters)
+                                if self.owner.cur_image.image_processing_mode == 'image delta':
+                                    im1 = self.owner.cur_image.im
+                                    mvmnt = delta_movement(im1, im, frame_no, img_parameters)
+                                    self.owner.cur_image.set_image(im)
+
+                                    with self.owner.motion_list_lock:
+                                        self.owner.motion_list.append(mvmnt)
+
+                                elif self.owner.cur_image.image_processing_mode == 'neural net':
+                                    if not self.owner.cur_image.nn_count_eggs:
+                                        with self.owner.cur_image.CNN.lock:
+                                            new_worm_loc_x, new_worm_loc_y = \
+                                                self.owner.cur_image.CNN.get_worm_location(im, frame_no)
+
+                                        old_worm_loc_x, old_worm_loc_y = self.owner.cur_image.get_last_worm_loc()
+                                        # distance between the old and new box centers
+                                        if new_worm_loc_y is not None:
+                                            mvmnt = np.sqrt(np.square(new_worm_loc_x - old_worm_loc_x) +
+                                                            np.square(new_worm_loc_y - old_worm_loc_y))
+                                            # set worm_loc in cur_image
+                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
+
+                                            with self.owner.motion_list_lock:
+                                                self.owner.motion_list.append(mvmnt)
+
+                                    elif self.owner.cur_image.nn_count_eggs:
+                                        with self.owner.cur_image.CNN.lock:
+                                            num_eggs, new_worm_loc_x, new_worm_loc_y = \
+                                                self.owner.cur_image.CNN.get_worm_location_and_count_eggs(im, frame_no)
+
+                                        old_worm_loc_x, old_worm_loc_y = self.owner.cur_image.get_last_worm_loc()
+                                        # distance between the old and new box centers
+                                        if new_worm_loc_y is not None:
+                                            mvmnt = np.sqrt(np.square(new_worm_loc_x - old_worm_loc_x) +
+                                                            np.square(new_worm_loc_y - old_worm_loc_y))
+                                            # set worm_loc in cur_image
+                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
+
+                                            with self.owner.motion_list_lock:
+                                                self.owner.motion_list.append(mvmnt)
+
+                                        with self.owner.egg_count_list_lock:
+                                            self.owner.egg_count_list.append(num_eggs)
+
                                 time_elapsed = time.time() - t1
-                                with self.owner.lock:
-                                    self.owner.motion_queue.put(mvmnt)
+
                                 Logger.info('ImageProcessor: image processed, time elapsed is %s, frame no is %s'
                                             % (time_elapsed, frame_no))
 
@@ -260,10 +322,19 @@ class CurrentImage:
     def __init__(self, imaging_parameters):
         self.im = None
         self.imaging_parameters = imaging_parameters
+        self.image_processing_mode = imaging_parameters['image_processing_mode']
         self.imaging_parameters['strel'] = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
         self.lock = threading.Lock()
         self.width, self.height = self.imaging_parameters['image_resolution']
         self.fwidth, self.fheight = self.raw_resolution((self.width, self.height))
+        if self.image_processing_mode == 'neural net':
+            # start without a worm location
+            self.worm_loc = (None, None)
+            self.nn_count_eggs = imaging_parameters['nn_count_eggs']
+            # load the frozen inference graph and label map, and set up general parameters
+            self.CNN = CNN(self.imaging_parameters['save_processed_images'], self.imaging_parameters['img_dir'],
+                           (self.fwidth, self.fheight))
+
         Logger.debug('CurrentImage: initialized')
 
     def raw_resolution(self, resolution, splitter=False):
@@ -285,3 +356,13 @@ class CurrentImage:
         with self.lock:
             self.im = im
             Logger.debug('CurrentImage: updated')
+
+    def set_worm_loc(self, worm_loc_x, worm_loc_y):
+        with self.lock:
+            self.worm_loc = (worm_loc_x, worm_loc_y)
+            Logger.debug('CurrentImage: worm location updated')
+
+    def get_last_worm_loc(self):
+        with self.lock:
+            return self.worm_loc
+
