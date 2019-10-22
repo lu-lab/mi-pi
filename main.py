@@ -261,9 +261,11 @@ class Interface(BoxLayout):
                 makedirs(calibrate_save_dir)
                 if self.imaging_params['save_images']:
                     unprocesspath = join(calibrate_save_dir, 'unprocessed')
-                    # processpath = join(calibrate_save_dir, 'processed')
                     makedirs(unprocesspath)
-                    # makedirs(processpath)
+                if self.imaging_params['save_processed_images']:
+                    processpath = join(calibrate_save_dir, 'processed')
+                    makedirs(processpath)
+
             p2 = Popen(["rclone", "mkdir", ':'.join([self.rclone_name, join(self.remote_savepath, 'videos')])])
             p3 = Popen(["rclone", "mkdir", ':'.join([self.rclone_name, join(self.remote_savepath, 'images')])])
             for p in [p1, p2, p3]:
