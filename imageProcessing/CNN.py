@@ -148,7 +148,7 @@ class CNN:
             cv2.imwrite(fp2, image)
 
         if worm_box is not None:
-            worm_center_x, worm_center_y = self._get_box_center(worm_box[0])
+            worm_center_x, worm_center_y = self._get_box_center(worm_box)
 
         return worm_center_x, worm_center_y
 
@@ -188,7 +188,7 @@ class CNN:
         worm_class, worm_box, worm_score = self._get_top_result(num_worms, worm_classes, worm_boxes, worm_scores)
 
         if worm_box is not None:
-            worm_center_x, worm_center_y = self._get_box_center(worm_box[0])
+            worm_center_x, worm_center_y = self._get_box_center(worm_box)
 
         if self.save_processed_images:
             if egg_boxes is not None:
