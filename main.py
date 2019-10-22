@@ -234,6 +234,7 @@ class Interface(BoxLayout):
         self.imaging_params['delta_threshold'] = app.config.getint('image delta', 'delta_threshold')
         self.imaging_params['num_pixel_threshold'] = app.config.getint('image delta', 'num_pixel_threshold')
         self.image_processing_mode = app.config.get('main image processing', 'image_processing_mode')
+        self.nn_count_eggs = bool(int(app.config.get('neural net', 'nn_count_eggs')))
         self.imaging_params['image_processing_mode'] = self.image_processing_mode
 
         self.imaging_params['save_images'] = bool(app.config.getint('main image processing', 'save_images'))
