@@ -42,7 +42,7 @@ class CNN:
         category_index = label_map_util.create_category_index(categories)
 
         # create a session
-        sess = tf.Session(graph=detection_graph)
+        sess = tf.compat.v1.Session(graph=detection_graph)
 
         return detection_graph, sess, category_index
 

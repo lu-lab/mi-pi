@@ -99,7 +99,7 @@ class Updater(multiprocessing.Process):
             # grab the current motion list
             with self.motion_list_lock:
                 motion_list = deepcopy(self.motion_list[:])
-                self.motion_list.clear()
+                self.motion_list[:] = []
             # use motion list to decide whether to turn the leds on
             if self.image_processing_mode == 'image delta':
                 next_params['opto_on'] = self.image_delta_motion_decision(motion_list)
