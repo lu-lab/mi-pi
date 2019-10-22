@@ -3,7 +3,7 @@
 cd ~/mi-pi
 echo "Making sure google sheets token is available..."
 # check whether there's a token file
-if [ -f "credentials.json" ]; then
+if [ -f "token.pickle" ]; then
     echo "Credentials file exists, let's make sure they're valid! You'll need to be on the internet"
     python3 setup_google_sheets.py
 else

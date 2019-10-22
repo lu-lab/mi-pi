@@ -5,6 +5,7 @@ from kivy.logger import Logger
 import configparser
 import subprocess
 import multiprocessing
+import threading
 
 import psutil
 import cv2
@@ -26,7 +27,7 @@ def build_stream_command(fps, youtube_link, youtube_key):
     return stream_cmd
 
 
-class CameraSupport(multiprocessing.Process):
+class CameraSupport(threading.Thread):
 
     def __init__(self, camera, config_file, image_processing_params,
                  timelapse_option, ledMatrix, stop_exp_event,
@@ -84,17 +85,11 @@ class CameraSupport(multiprocessing.Process):
             width, height = self.camera.resolution
             self.max_difference = (width * height) / 16
 
-        # close the camera again since the process itself will run in a separate process and the camera isn't threading/
-        # multiprocessing safe
-        self.camera.close()
-
         Logger.info('Camera: video path %s' % self.video_save_dir)
         Logger.info('Camera: images path %s' % self.image_processing_params['img_dir'])
         Logger.info('Camera: local init success')
 
     def run(self):
-        self.camera = picamera.PiCamera(resolution=self.resolution)
-        self.camera.framerate = int(float(self.fps))
 
         if self.timelapse_option == 'None':
             if not self.webstream and self.image_processing_mode == 'None':

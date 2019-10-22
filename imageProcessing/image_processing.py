@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import threading
+import multiprocessing
 import queue
 import io
 from kivy.logger import Logger
@@ -241,6 +242,11 @@ class ImageProcessor(threading.Thread):
 
                                 elif self.owner.cur_image.image_processing_mode == 'image delta':
                                     self.owner.cur_image.set_image(im)
+
+                                time_elapsed = time.time() - t1
+                                Logger.info(
+                                    'ImageProcessor: First image processed, time elapsed is %s, frame no is %s'
+                                    % (time_elapsed, frame_no))
 
 
                         # if it's past the first frame, convert to gray and calculate the movement delta between this
