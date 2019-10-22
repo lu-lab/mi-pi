@@ -419,7 +419,7 @@ class CameraSupport(multiprocessing.Process):
 
         self.width, self.height = self.image_processing_params['image_resolution']
         mvmnt = delta_movement(im1, im2, 0, self.image_processing_params)
-        LED_difference = delta_movement(im2, im3, self.image_processing_params)
+        LED_difference = delta_movement(im2, im3, 0, self.image_processing_params)
         Logger.info('Camera: movement is %s, LED difference is %s' % (mvmnt, LED_difference))
         return mvmnt, LED_difference
 
