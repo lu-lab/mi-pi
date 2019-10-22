@@ -65,21 +65,14 @@ class CameraSupport(multiprocessing.Process):
         self.save_dir = config['experiment settings']['local_exp_path']
         self.video_save_dir = join(self.save_dir, 'videos')
         self.image_processing_params['img_dir'] = join(self.save_dir, 'images')
+        self.video_length = video_length
 
-        self.end_time = None
         Logger.info('webstream is %s, image processing mode is %s' % (self.webstream, self.image_processing_mode))
         if camera is not None:
             camera.close()
 
-        if self.ledMatrix.do_timelapse == 'None':
-            self.camera = picamera.PiCamera(resolution=self.resolution)
-        else:
-            # max out the resolution if linescan modality
-            self.camera = picamera.PiCamera(resolution=(3280, 2464))
-
-        self.video_length = video_length
-
         # set resolution and fps
+        self.camera = picamera.PiCamera(resolution=self.resolution)
         self.camera.framerate = int(float(self.fps))
 
         # determine the difference in images taken under blue LEDs on vs. off.
@@ -91,11 +84,17 @@ class CameraSupport(multiprocessing.Process):
             width, height = self.camera.resolution
             self.max_difference = (width * height) / 16
 
+        # close the camera again since the process itself will run in a separate process and the camera isn't threading/
+        # multiprocessing safe
+        self.camera.close()
+
         Logger.info('Camera: video path %s' % self.video_save_dir)
         Logger.info('Camera: images path %s' % self.image_processing_params['img_dir'])
         Logger.info('Camera: local init success')
 
     def run(self):
+        self.camera = picamera.PiCamera(resolution=self.resolution)
+        self.camera.framerate = int(float(self.fps))
 
         if self.timelapse_option == 'None':
             if not self.webstream and self.image_processing_mode == 'None':
