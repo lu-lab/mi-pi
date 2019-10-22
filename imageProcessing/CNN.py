@@ -67,8 +67,8 @@ class CNN:
 
     def _prep_image(self, image):
         # transform back to color from grayscale
-        image = cv2.cvtColor((image, cv2.COLOR_GRAY2RGB))
-       #  change color order from BGR to RGB
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        # change color order from BGR to RGB
         image = image[:, :, [2, 1, 0]]
         return image
 
