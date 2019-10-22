@@ -1,4 +1,5 @@
 import threading
+import os
 from os.path import join
 
 import cv2
@@ -20,6 +21,7 @@ class CNN:
         self.save_processed_images = save_processed_images
         self.img_dir = img_dir
         self.width, self.height = img_dims
+        self.cwd = os.getcwd()
         self.graph, self.sess, self.category_index = self.load_graph()
         Logger.info('CNN: tensorflow model loaded')
 
@@ -28,13 +30,13 @@ class CNN:
         detection_graph = tf.Graph()
         with detection_graph.as_default():
             od_graph_def = tf.compat.v1.GraphDef()
-            with tf.io.gfile.GFile('/neural_net/frozen_inference_graph.pb', 'rb') as fid:
+            with tf.io.gfile.GFile(join(self.cwd, 'neural_net/frozen_inference_graph.pb'), 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
 
         # Load label map
-        label_map = label_map_util.load_labelmap('/neural_net/label_map.pbtxt')
+        label_map = label_map_util.load_labelmap(join(self.cwd, 'neural_net/label_map.pbtxt'))
         categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=2,
                                                                     use_display_name=True)
         category_index = label_map_util.create_category_index(categories)

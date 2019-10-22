@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 import math
+from copy import deepcopy
 from statistics import mean
 from kivy.logger import Logger
 import threading
@@ -97,7 +98,7 @@ class Updater(multiprocessing.Process):
         if self.image_processing_mode != 'None':
             # grab the current motion list
             with self.motion_list_lock:
-                motion_list = self.motion_list[:].deepcopy()
+                motion_list = deepcopy(self.motion_list[:])
                 self.motion_list.clear()
             # use motion list to decide whether to turn the leds on
             if self.image_processing_mode == 'image delta':
