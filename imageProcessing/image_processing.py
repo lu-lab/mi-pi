@@ -237,7 +237,7 @@ class ImageProcessor(threading.Thread):
                                 if self.owner.cur_image.image_processing_mode == 'neural net':
                                     # get worm location and set it
                                     with self.owner.cur_image.CNN.lock:
-                                        worm_loc_x, worm_loc_y = self.owner.cur_image.CNN.get_worm_location(im)
+                                        worm_loc_x, worm_loc_y = self.owner.cur_image.CNN.get_worm_location(im, frame_no)
                                     self.owner.cur_image.set_worm_loc(worm_loc_x, worm_loc_y)
 
                                 elif self.owner.cur_image.image_processing_mode == 'image delta':
