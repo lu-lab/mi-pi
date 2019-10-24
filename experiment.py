@@ -90,21 +90,6 @@ class Experiment(threading.Thread):
         self.piCam.start()
         Logger.info('Experiment: Threads and processes started')
 
-    def check_queue(self):
-        while True:
-            if not self.cam_queue.empty():
-                motion = self.cam_queue.get()
-                Logger.debug('Experiment: motion is %s, time is %s' % (motion, time.time()))
-                if motion is None:
-                    Logger.debug('Experiment: Poison pill received, exiting')
-                    self.cam_queue.task_done()
-                    self.cam_queue.join()
-                    self.interface.stop_event.set()
-                    break
-                else:
-                    self.motion_list.append(motion)
-                    self.cam_queue.task_done()
-
     def write_sheet_to_dbx(self, values):
         local_file = join(self.interface.local_savepath, 'exp_conditions.csv')
         with open(local_file, mode='w') as csv_file:

@@ -90,14 +90,14 @@ class CNN:
         # if more than one worm, take the one with the highest score
         if num_results > 1:
             # scores are always ordered from highest to lowest, so...
-            top_box = boxes[0]
-            top_score = scores[0]
-            top_class = classes[0]
+            top_box = np.squeeze(boxes[0])
+            top_score = np.squeeze(scores[0])
+            top_class = np.squeeze(classes[0])
         # if one worm, get it's coordinates
         elif num_results == 1:
-            top_box = boxes
-            top_score = scores
-            top_class = classes
+            top_box = np.squeeze(boxes)
+            top_score = np.squeeze(scores)
+            top_class = np.squeeze(classes)
 
         return top_class, top_box, top_score
 

@@ -211,10 +211,11 @@ class CameraSupport(threading.Thread):
                                     use_video_port=True)
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 img_counter = 1
-                self.img_pool.frame_queue.put(img_counter)
-                Logger.debug('Camera: img_counter in frame queue')
-                self.img_pool.processor.frame_event.set()
-                Logger.debug('Camera: frame_event set')
+                if self.img_pool.processor is not None:
+                    self.img_pool.frame_queue.put(img_counter)
+                    Logger.debug('Camera: img_counter in frame queue')
+                    self.img_pool.processor.frame_event.set()
+                    Logger.debug('Camera: frame_event set')
                 t_image = 0
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     Logger.debug('Camera: video recording started')
@@ -229,10 +230,11 @@ class CameraSupport(threading.Thread):
                                                 use_video_port=True)
                             Logger.info('Camera: capture while collecting video at time %s' % time.time())
                             img_counter += 1
-                            self.img_pool.frame_queue.put(img_counter)
-                            Logger.debug('Camera: img_counter in frame queue')
-                            self.img_pool.processor.frame_event.set()
-                            Logger.debug('Camera: frame_event set')
+                            if self.img_pool.processor is not None:
+                                self.img_pool.frame_queue.put(img_counter)
+                                Logger.debug('Camera: img_counter in frame queue')
+                                self.img_pool.processor.frame_event.set()
+                                Logger.debug('Camera: frame_event set')
                             vmem = psutil.virtual_memory()
                             Logger.debug('Memory usage is %s' % vmem.percent)
                             t_image = 0
@@ -255,10 +257,11 @@ class CameraSupport(threading.Thread):
                                                     use_video_port=True)
                                 Logger.info('Camera: capture during inter-video interval at time %s' % time.time())
                                 img_counter += 1
-                                self.img_pool.frame_queue.put(img_counter)
-                                # Logger.debug('Camera: img_counter in frame_queue')
-                                self.img_pool.processor.frame_event.set()
-                                # Logger.debug('Camera: frame_event set')
+                                if self.img_pool.processor is not None:
+                                    self.img_pool.frame_queue.put(img_counter)
+                                    # Logger.debug('Camera: img_counter in frame_queue')
+                                    self.img_pool.processor.frame_event.set()
+                                    # Logger.debug('Camera: frame_event set')
                                 vmem = psutil.virtual_memory()
                                 Logger.debug('Memory usage is %s' % vmem.percent)
                                 t_image = 0
@@ -270,7 +273,7 @@ class CameraSupport(threading.Thread):
                 self.camera.close()
                 self.video_and_motion()
             finally:
-                # wait a few seconds to make sure all image processing is wrapped up
+               # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
                 # stop recording gracefully
                 try:
@@ -298,8 +301,9 @@ class CameraSupport(threading.Thread):
                                     resize=self.image_processing_params['image_resolution'],
                                     use_video_port=True)
                 img_counter = 1
-                self.img_pool.frame_queue.put(img_counter)
-                self.img_pool.processor.frame_event.set()
+                if self.img_pool.processor is not None:
+                    self.img_pool.frame_queue.put(img_counter)
+                    self.img_pool.processor.frame_event.set()
                 t_image = 0
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     t_video = 0
@@ -314,8 +318,9 @@ class CameraSupport(threading.Thread):
                                                 resize=self.image_processing_params['image_resolution'],
                                                 use_video_port=True)
                             img_counter += 1
-                            self.img_pool.frame_queue.put(img_counter)
-                            self.img_pool.processor.frame_event.set()
+                            if self.img_pool.processor is not None:
+                                self.img_pool.frame_queue.put(img_counter)
+                                self.img_pool.processor.frame_event.set()
                             t_image = 0
                         t_video += 1
                         t_image += 1
@@ -336,8 +341,9 @@ class CameraSupport(threading.Thread):
                                                     use_video_port=True)
                                 Logger.info('Camera: capture during inter-video interval at time %s' % time.time())
                                 img_counter += 1
-                                self.img_pool.frame_queue.put(img_counter)
-                                self.img_pool.processor.frame_event.set()
+                                if self.img_pool.processor is not None:
+                                    self.img_pool.frame_queue.put(img_counter)
+                                    self.img_pool.processor.frame_event.set()
                                 vmem = psutil.virtual_memory()
                                 Logger.debug('Memory usage is %s' % vmem.percent)
                                 t_image = 0
