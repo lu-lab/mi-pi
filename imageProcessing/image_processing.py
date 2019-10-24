@@ -276,14 +276,16 @@ class ImageProcessor(threading.Thread):
 
                                         old_worm_loc_x, old_worm_loc_y = self.owner.cur_image.get_last_worm_loc()
                                         # distance between the old and new box centers
-                                        if new_worm_loc_y is not None:
+                                        if new_worm_loc_y is not None and old_worm_loc_y is not None:
                                             mvmnt = np.sqrt(np.square(new_worm_loc_x - old_worm_loc_x) +
                                                             np.square(new_worm_loc_y - old_worm_loc_y))
-                                            # set worm_loc in cur_image
-                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
 
                                             with self.owner.motion_list_lock:
                                                 self.owner.motion_list.append(mvmnt)
+
+                                        if new_worm_loc_y is not None:
+                                            # set worm_loc in cur_image
+                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
 
                                     elif self.owner.cur_image.nn_count_eggs:
                                         with self.owner.cur_image.CNN.lock:
@@ -292,14 +294,15 @@ class ImageProcessor(threading.Thread):
 
                                         old_worm_loc_x, old_worm_loc_y = self.owner.cur_image.get_last_worm_loc()
                                         # distance between the old and new box centers
-                                        if new_worm_loc_y is not None:
+                                        if new_worm_loc_y is not None and old_worm_loc_y is not None:
                                             mvmnt = np.sqrt(np.square(new_worm_loc_x - old_worm_loc_x) +
                                                             np.square(new_worm_loc_y - old_worm_loc_y))
-                                            # set worm_loc in cur_image
-                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
 
                                             with self.owner.motion_list_lock:
                                                 self.owner.motion_list.append(mvmnt)
+                                        if new_worm_loc_y is not None:
+                                            # set worm_loc in cur_image
+                                            self.owner.cur_image.set_worm_loc(new_worm_loc_x, new_worm_loc_y)
 
                                         with self.owner.egg_count_list_lock:
                                             self.owner.egg_count_list.append(num_eggs)
