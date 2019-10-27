@@ -131,7 +131,11 @@ class CameraSupport(threading.Thread):
             except picamera.PiCameraError:
                 # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
-                self.camera.close()
+                if self.camera is not None:
+                    self.camera.close()
+                # set resolution and fps
+                self.camera = picamera.PiCamera(resolution=self.resolution)
+                self.camera.framerate = int(float(self.fps))
                 self.video_only()
             finally:
                 # wait a few seconds to make sure everything is wrapped up
@@ -176,7 +180,11 @@ class CameraSupport(threading.Thread):
             except picamera.PiCameraError:
                 # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
-                self.camera.close()
+                if self.camera is not None:
+                    self.camera.close()
+                # set resolution and fps
+                self.camera = picamera.PiCamera(resolution=self.resolution)
+                self.camera.framerate = int(float(self.fps))
                 self.video_and_webstream()
             finally:
                 # wait a few seconds to make sure everything is wrapped up
@@ -270,7 +278,11 @@ class CameraSupport(threading.Thread):
             except picamera.PiCameraError:
                 # if for whatever reason the picamera isn't recording, restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')
-                self.camera.close()
+                if self.camera is not None:
+                    self.camera.close()
+                # set resolution and fps
+                self.camera = picamera.PiCamera(resolution=self.resolution)
+                self.camera.framerate = int(float(self.fps))
                 self.video_and_motion()
             finally:
                # wait a few seconds to make sure all image processing is wrapped up
@@ -354,7 +366,11 @@ class CameraSupport(threading.Thread):
             except picamera.PiCameraError as err:
                 # if for whatever reason the picamera isn't recording, restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera. Error is %s' % err)
-                self.camera.close()
+                if self.camera is not None:
+                    self.camera.close()
+                # set resolution and fps
+                self.camera = picamera.PiCamera(resolution=self.resolution)
+                self.camera.framerate = int(float(self.fps))
                 self.video_and_motion_and_webstream()
             finally:
                 # wait a few seconds to make sure all image processing is wrapped up

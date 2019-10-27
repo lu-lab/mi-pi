@@ -164,8 +164,11 @@ class ProcessorPool:
                     self.processor = None
                     Logger.info('ProcessorPool: no processor available')
             if self.processor:
-                self.processor.stream.write(image)
-                self.processor.im_event.set()
+                try:
+                    self.processor.stream.write(image)
+                    self.processor.im_event.set()
+                except MemoryError:
+                    Logger.debug('ProcessorPool: memory error whilst writing image to stream')
 
     def flush(self):
         pass

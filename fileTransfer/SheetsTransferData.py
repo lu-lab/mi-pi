@@ -10,6 +10,7 @@ from kivy.logger import Logger
 from googleapiclient.errors import HttpError
 import gc
 import socket
+import httplib2
 
 
 class SheetsTransferData:
@@ -81,6 +82,9 @@ class SheetsTransferData:
                     time.sleep(5)
             except socket.timeout:
                 time.sleep(5)
+            except httplib2.ServerNotFoundError:
+                time.sleep(5)
+                values = []
             finally:
                 counter += 1
         gc.collect()
@@ -147,10 +151,17 @@ class SheetsTransferData:
                 if err.resp.status in [403, 500, 503]:
                     time.sleep(5)
                 values = []
+            except OSError:
+                time.sleep(5)
+                values = []
             except socket.timeout:
                 time.sleep(5)
                 values = []
-            counter += 1
+            except httplib2.ServerNotFoundError:
+                time.sleep(5)
+                values = []
+            finally:
+                counter += 1
         gc.collect()
         return values
 
@@ -181,5 +192,10 @@ class SheetsTransferData:
                     time.sleep(5)
             except socket.timeout:
                 time.sleep(5)
-            counter += 1
+            except OSError:
+                time.sleep(5)
+            except httplib2.ServerNotFoundError:
+                time.sleep(5)
+            finally:
+                counter += 1
         gc.collect()
