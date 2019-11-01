@@ -132,23 +132,27 @@ class CNN:
         image = self._prep_image(image)
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         expanded_image = np.expand_dims(image, axis=0)
-        classes, boxes, scores = self._run(expanded_image)
-        target_class = 1
-        min_score = 0.8
-        num_worms, worm_classes, worm_boxes, worm_scores = self._screen_results(target_class, min_score,
-                                                                                classes, boxes, scores)
-        worm_class, worm_box, worm_score = self._get_top_result(num_worms, worm_classes, worm_boxes, worm_scores)
+        try:
+            classes, boxes, scores = self._run(expanded_image)
+            target_class = 1
+            min_score = 0.8
+            num_worms, worm_classes, worm_boxes, worm_scores = self._screen_results(target_class, min_score,
+                                                                                    classes, boxes, scores)
+            worm_class, worm_box, worm_score = self._get_top_result(num_worms, worm_classes, worm_boxes, worm_scores)
 
-        if self.save_processed_images:
+            if self.save_processed_images:
+                if worm_box is not None:
+                    image = self._label_image(image, worm_box, worm_score, class_idx=1)
+
+                fn = 'img' + str(frame_no) + '.png'
+                fp2 = join(self.img_dir, 'processed', fn)
+                cv2.imwrite(fp2, image)
+
             if worm_box is not None:
-                image = self._label_image(image, worm_box, worm_score, class_idx=1)
-
-            fn = 'img' + str(frame_no) + '.png'
-            fp2 = join(self.img_dir, 'processed', fn)
-            cv2.imwrite(fp2, image)
-
-        if worm_box is not None:
-            worm_center_x, worm_center_y = self._get_box_center(worm_box)
+                worm_center_x, worm_center_y = self._get_box_center(worm_box)
+        except tf.compat.v1.errors.ResourceExhaustedError:
+            # just return the center point as None, None
+            pass
 
         return worm_center_x, worm_center_y
 

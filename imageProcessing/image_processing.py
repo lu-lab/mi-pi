@@ -174,6 +174,10 @@ class ProcessorPool:
         pass
 
     def exit(self):
+        # make sure frame queue is cleared out
+        while not self.frame_queue.empty():
+            self.frame_queue.get()
+            self.frame_queue.task_done()
         self.frame_queue.join()
         if self.processor:
             with self.lock:

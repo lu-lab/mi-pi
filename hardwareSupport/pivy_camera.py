@@ -4,7 +4,6 @@ from os.path import join
 from kivy.logger import Logger
 import configparser
 import subprocess
-import multiprocessing
 import threading
 
 import psutil

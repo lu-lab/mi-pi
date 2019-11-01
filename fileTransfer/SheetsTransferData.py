@@ -108,7 +108,7 @@ class SheetsTransferData:
         cell_range = str(cur_row) + ':' + str(cur_row)
         values = self.read_sheet(cell_range=cell_range)
         if not values:
-            Logger.info('No data found. Make sure your google sheet is populated with data')
+            Logger.info('Sheets: No data found. Make sure your google sheet is populated with data')
             return None, False
         else:
             # return
@@ -188,13 +188,17 @@ class SheetsTransferData:
             except HttpError as err:
                 # If the error is a rate limit or connection error,
                 # wait and try again.
+                Logger.debug('Sheets: HttpError')
                 if err.resp.status in [403, 500, 503]:
                     time.sleep(5)
             except socket.timeout:
+                Logger.debug('Sheets: socket timeout')
                 time.sleep(5)
             except OSError:
+                Logger.debug('Sheets: OSError')
                 time.sleep(5)
             except httplib2.ServerNotFoundError:
+                Logger.debug('Sheets: Server not found')
                 time.sleep(5)
             finally:
                 counter += 1

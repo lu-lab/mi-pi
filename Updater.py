@@ -155,6 +155,7 @@ class Updater(multiprocessing.Process):
             with self.cur_row_lock:
                 self.cur_row += 1
         finally:
+            Logger.debug('Updater: finishing this update')
             try:
                 t_upload.join()
             except NameError:
