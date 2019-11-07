@@ -84,11 +84,11 @@ class Updater(multiprocessing.Process):
         with self.cur_row_lock:
             self.cur_row += 1
         # create threaded timers for updating experiment hardware parameters, uploading files
-        t_update = RepeatingTimer(self.sheet, start_time, self.exp_length, self.update, self.stop_event,
-                                  self.cur_row, self.cur_row_lock)
-        t_update.start()
+        t_timer = RepeatingTimer(self.sheet, start_time, self.exp_length, self.update, self.stop_event,
+                                 self.cur_row, self.cur_row_lock)
+        t_timer.start()
 
-        t_update.join()
+        t_timer.join()
         Logger.debug('Updater: update timer thread joined')
         return
 
@@ -159,10 +159,9 @@ class Updater(multiprocessing.Process):
                 t_upload.start()
 
         finally:
-            Logger.debug('Updater: finishing this update')
             try:
-                # set timeout as 10 seconds to make sure thread can't block infinitely
-                t_upload.join(10)
+                # set timeout as 30 seconds to make sure thread can't block infinitely
+                t_upload.join(30)
                 Logger.debug('Updater: attempted to join file_upload thread')
             except NameError:
                 Logger.debug('Updater: NameError when joining file_upload thread')
@@ -374,9 +373,11 @@ class RepeatingTimer(threading.Thread):
                             counter += 1
                         self.cur_row += 1
                     if self.args is not None:
-                        self.function(self.args)
+                        t_update = threading.Thread(name='update', target=self.function, args=(self.args,))
+                        t_update.start()
                     else:
-                        self.function(self.default_args)
+                        t_update = threading.Thread(name='update', target=self.function, args=(self.default_args,))
+                        t_update.start()
             except StopIteration:
                 Logger.info('Repeating Timer: ending repeating timer')
                 self.stop()
