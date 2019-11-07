@@ -148,17 +148,24 @@ class Updater(multiprocessing.Process):
                 counter +=1
 
             self.write_data_to_sheet()
-
-            # upload new video files to dropbox
-            t_upload = threading.Thread(name='file_upload', target=self.upload_to_remote)
-            t_upload.start()
             with self.cur_row_lock:
                 self.cur_row += 1
+
+            # upload new video files to dropbox, but only if there's not another file_upload thread running
+            file_upload_threads = [1 for t in threading.enumerate() if t.getName() == 'file_upload']
+            if not file_upload_threads:
+                # empty list
+                t_upload = threading.Thread(name='file_upload', target=self.upload_to_remote)
+                t_upload.start()
+
         finally:
             Logger.debug('Updater: finishing this update')
             try:
-                t_upload.join()
+                # set timeout as 10 seconds to make sure thread can't block infinitely
+                t_upload.join(10)
+                Logger.debug('Updater: attempted to join file_upload thread')
             except NameError:
+                Logger.debug('Updater: NameError when joining file_upload thread')
                 t_upload = None
 
     def write_data_to_sheet(self):

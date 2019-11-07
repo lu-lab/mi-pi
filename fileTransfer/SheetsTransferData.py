@@ -146,18 +146,26 @@ class SheetsTransferData:
                 values = result.get('values', [])
                 success = True
             except HttpError as err:
+                Logger.debug('Sheets: HttpError')
                 # If the error is a rate limit or connection error,
                 # wait and try again.
                 if err.resp.status in [403, 500, 503]:
                     time.sleep(5)
                 values = []
             except OSError:
+                Logger.debug('Sheets: OSError')
+                time.sleep(5)
+                values = []
+            except MemoryError:
+                Logger.debug('Sheets: MemoryError')
                 time.sleep(5)
                 values = []
             except socket.timeout:
+                Logger.debug('Sheets: socket timeout')
                 time.sleep(5)
                 values = []
             except httplib2.ServerNotFoundError:
+                Logger.debug('Sheets: Server not found')
                 time.sleep(5)
                 values = []
             finally:
@@ -197,6 +205,8 @@ class SheetsTransferData:
             except OSError:
                 Logger.debug('Sheets: OSError')
                 time.sleep(5)
+            except MemoryError:
+                Logger.debug('Sheets: MemoryError')
             except httplib2.ServerNotFoundError:
                 Logger.debug('Sheets: Server not found')
                 time.sleep(5)
