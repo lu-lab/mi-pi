@@ -53,8 +53,14 @@ class CameraSupport(threading.Thread):
         self.youtube_link = config['webstreaming']['youtube_link']
         self.youtube_key = config['webstreaming']['youtube_key']
 
-        self.image_processing_mode = config['main image processing']['image_processing_mode']
         self.image_processing_params = image_processing_params
+        self.image_processing_mode = config['main image processing']['image_processing_mode']
+        if self.image_processing_mode == 'neural net':
+            # reduce size of image to try to save memory - since tensorflow will resize anyway
+            width, height = self.image_processing_params['image_resolution']
+            new_width = 1024
+            new_height = int((new_width / width) * height)
+            self.image_processing_params['image_resolution'] = new_width, new_height
         self.image_processing_params['nn_count_eggs'] = bool(int(config['neural net']['nn_count_eggs']))
         self.img_pool = None
 
