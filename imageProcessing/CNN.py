@@ -21,9 +21,9 @@ class CNN:
         self.lock = threading.Lock()
         self.box_file_lock = threading.Lock()
         self.save_processed_images = save_processed_images
+        self.img_dir = img_dir
         if self.save_processed_images:
             self.h5_file = join(self.img_dir, 'processed', 'data.h5')
-        self.img_dir = img_dir
         self.width, self.height = img_dims
         self.cwd = os.getcwd()
         self.graph, self.sess, self.category_index = self.load_graph()
