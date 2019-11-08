@@ -3,6 +3,7 @@ import os
 from os.path import join
 
 import cv2
+import h5py
 import numpy as np
 import tensorflow as tf
 from kivy.logger import Logger
@@ -18,7 +19,10 @@ class CNN:
 
     def __init__(self, save_processed_images, img_dir, img_dims):
         self.lock = threading.Lock()
+        self.box_file_lock = threading.Lock()
         self.save_processed_images = save_processed_images
+        if self.save_processed_images:
+            self.h5_file = join(self.img_dir, 'processed', 'data.h5')
         self.img_dir = img_dir
         self.width, self.height = img_dims
         self.cwd = os.getcwd()
@@ -142,14 +146,16 @@ class CNN:
 
             if self.save_processed_images:
                 if worm_box is not None:
-                    image = self._label_image(image, worm_box, worm_score, class_idx=1)
-
-                fn = 'img' + str(frame_no) + '.png'
-                fp2 = join(self.img_dir, 'processed', fn)
-                cv2.imwrite(fp2, image)
+                    with self.box_file_lock:
+                        with h5py.File(self.h5_file, 'w') as hf:
+                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=worm_scores)
 
             if worm_box is not None:
                 worm_center_x, worm_center_y = self._get_box_center(worm_box)
+
         except tf.compat.v1.errors.ResourceExhaustedError:
             # just return the center point as None, None
             pass
@@ -157,52 +163,69 @@ class CNN:
         return worm_center_x, worm_center_y
 
     def count_eggs(self, image, frame_no):
+        num_eggs = None
         # default to no center x or y positions
         image = self._prep_image(image)
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         expanded_image = np.expand_dims(image, axis=0)
-        classes, boxes, scores = self._run(expanded_image)
-        target_class = 2
-        min_score = 0.8
-        num_eggs, egg_classes, egg_boxes, egg_scores = self._screen_results(target_class, min_score, classes, boxes, scores)
-        if self.save_processed_images:
-            if egg_boxes is not None:
-                for box, score in zip(egg_boxes, egg_scores):
-                    image = self._label_image(image, box, score, class_idx=2)
+        try:
 
-            fn = 'img' + str(frame_no) + '.png'
-            fp2 = join(self.img_dir, 'processed', fn)
-            cv2.imwrite(fp2, image)
+            classes, boxes, scores = self._run(expanded_image)
+            target_class = 2
+            min_score = 0.8
+            num_eggs, egg_classes, egg_boxes, egg_scores = self._screen_results(target_class, min_score, classes, boxes, scores)
+            if self.save_processed_images:
+                if egg_boxes is not None:
+                    with self.box_file_lock:
+                        with h5py.File(self.h5_file, 'w') as hf:
+                            frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                            frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=egg_scores)
+
+        except tf.compat.v1.errors.ResourceExhaustedError:
+            # just return the number of eggs as None
+            pass
 
         return num_eggs
 
     def get_worm_location_and_count_eggs(self, image, frame_no):
         worm_center_x, worm_center_y = (None, None)
+        num_eggs = None
         image = self._prep_image(image)
         expanded_image = np.expand_dims(image, axis=0)
-        classes, boxes, scores = self._run(expanded_image)
+        try:
+            classes, boxes, scores = self._run(expanded_image)
 
-        target_class = 2
-        min_score = 0.8
-        num_eggs, egg_classes, egg_boxes, egg_scores = self._screen_results(target_class, min_score, classes, boxes, scores)
-        target_class = 1
-        min_score = 0.8
-        num_worms, worm_classes, worm_boxes, worm_scores = self._screen_results(target_class, min_score,
-                                                                                classes, boxes, scores)
-        worm_class, worm_box, worm_score = self._get_top_result(num_worms, worm_classes, worm_boxes, worm_scores)
+            target_class = 2
+            min_score = 0.8
+            num_eggs, egg_classes, egg_boxes, egg_scores = self._screen_results(target_class, min_score, classes, boxes, scores)
+            target_class = 1
+            min_score = 0.8
+            num_worms, worm_classes, worm_boxes, worm_scores = self._screen_results(target_class, min_score,
+                                                                                    classes, boxes, scores)
+            worm_class, worm_box, worm_score = self._get_top_result(num_worms, worm_classes, worm_boxes, worm_scores)
 
-        if worm_box is not None:
-            worm_center_x, worm_center_y = self._get_box_center(worm_box)
-
-        if self.save_processed_images:
-            if egg_boxes is not None:
-                for box, score in zip(egg_boxes, egg_scores):
-                    image = self._label_image(image, box, score, class_idx=2)
             if worm_box is not None:
-                image = self._label_image(image, worm_box, worm_score, class_idx=1)
-            fn = 'img' + str(frame_no) + '.png'
-            fp2 = join(self.img_dir, 'processed', fn)
-            cv2.imwrite(fp2, image)
+                worm_center_x, worm_center_y = self._get_box_center(worm_box)
+
+            if self.save_processed_images:
+                with self.box_file_lock:
+                    with h5py.File(self.h5_file, 'w') as hf:
+                        if egg_boxes is not None:
+                            frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                            frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=egg_scores)
+                        if worm_box is not None:
+                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=worm_scores)
+
+        except tf.compat.v1.errors.ResourceExhaustedError:
+            # just return the center point as None, None and the number of eggs as None
+            pass
 
         return num_eggs, worm_center_x, worm_center_y
 

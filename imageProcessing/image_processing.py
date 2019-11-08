@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import threading
-import multiprocessing
 import queue
 import io
 from kivy.logger import Logger
@@ -242,6 +241,13 @@ class ImageProcessor(threading.Thread):
                                     cv2.imwrite(fp, im)
 
                                 if self.owner.cur_image.image_processing_mode == 'neural net':
+                                    # see if resizing helps with memory issues?
+                                    # scale_percent = 80  # percent of original size
+                                    # width = int(self.owner.cur_image.fwidth * scale_percent / 100)
+                                    # height = int(self.owner.cur_image.fheight * scale_percent / 100)
+                                    # dim = (width, height)
+                                    # # resize image
+                                    # im = cv2.resize(im, dim, interpolation=cv2.INTER_AREA)
                                     # get worm location and set it
                                     with self.owner.cur_image.CNN.lock:
                                         worm_loc_x, worm_loc_y = self.owner.cur_image.CNN.get_worm_location(im, frame_no)
@@ -276,6 +282,13 @@ class ImageProcessor(threading.Thread):
                                         self.owner.motion_list.append(mvmnt)
 
                                 elif self.owner.cur_image.image_processing_mode == 'neural net':
+                                    # see if resizing helps with memory issues?
+                                    # scale_percent = 80  # percent of original size
+                                    # width = int(self.owner.cur_image.fwidth * scale_percent / 100)
+                                    # height = int(self.owner.cur_image.fheight * scale_percent / 100)
+                                    # dim = (width, height)
+                                    # # resize image
+                                    # im = cv2.resize(im, dim, interpolation=cv2.INTER_AREA)
                                     if not self.owner.cur_image.nn_count_eggs:
                                         with self.owner.cur_image.CNN.lock:
                                             new_worm_loc_x, new_worm_loc_y = \
