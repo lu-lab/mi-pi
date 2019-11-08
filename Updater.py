@@ -149,13 +149,14 @@ class Updater(multiprocessing.Process):
 
             # write motion data, temp, and humidity to google sheet
             self.write_data_to_sheet()
-            with self.cur_row_lock:
-                self.cur_row += 1
 
             # upload new files to dropbox
             self.upload_to_remote()
 
         finally:
+            # make sure row count gets updated even if writing to sheet isn't successful
+            with self.cur_row_lock:
+                self.cur_row += 1
             Logger.debug('Updater: finishing this update')
 
     def write_data_to_sheet(self):
