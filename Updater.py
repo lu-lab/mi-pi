@@ -140,32 +140,23 @@ class Updater(multiprocessing.Process):
         #     pass
 
         try:
-            # get temperature and humidity reading and write to google sheet
+            # get temperature and humidity reading
             self.data, success = self.tempSensor.receive_serial(self.data)
             counter = 0
             while not success and counter <= 3:
                 self.data, success = self.tempSensor.receive_serial(self.data)
                 counter +=1
 
+            # write motion data, temp, and humidity to google sheet
             self.write_data_to_sheet()
             with self.cur_row_lock:
                 self.cur_row += 1
 
-            # upload new video files to dropbox, but only if there's not another file_upload thread running
-            file_upload_threads = [1 for t in threading.enumerate() if t.getName() == 'file_upload']
-            if not file_upload_threads:
-                # empty list
-                t_upload = threading.Thread(name='file_upload', target=self.upload_to_remote)
-                t_upload.start()
+            # upload new files to dropbox
+            self.upload_to_remote()
 
         finally:
-            try:
-                # set timeout as 30 seconds to make sure thread can't block infinitely
-                t_upload.join(30)
-                Logger.debug('Updater: attempted to join file_upload thread')
-            except NameError:
-                Logger.debug('Updater: NameError when joining file_upload thread')
-                t_upload = None
+            Logger.debug('Updater: finishing this update')
 
     def write_data_to_sheet(self):
         columns = sorted(self.sheet.data_col_dict.values())

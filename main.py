@@ -147,9 +147,6 @@ class Interface(BoxLayout):
             self.experiment.piCam.join()
             Logger.debug('Interface: update process terminated and camera joined')
 
-        # self.experiment.t_camera.join()
-        # Logger.debug('Interface: camera closed')
-
         # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
         max_row = self.explength + self.experiment.sheet.start_row
         cell_range = 'A1:L' + str(max_row)
