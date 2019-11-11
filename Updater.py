@@ -218,7 +218,12 @@ class Updater(multiprocessing.Process):
             p.wait(timeout=50)
         except TimeoutExpired:
             p.kill()
-        ManageLocalFiles.cleanup_files(source, join(self.remote_savepath, 'images'), self.rclone_name)
+        # while experiment is running, don't delete .h5 file! it will only exist if user chooses to save processed data
+        # from neural net processing
+        ManageLocalFiles.cleanup_files(source,
+                                       join(self.remote_savepath, 'images'),
+                                       self.rclone_name,
+                                       exclude_ext='.h5')
 
     def neural_net_motion_decision(self, motion_list):
         # set up a default opto_on to return

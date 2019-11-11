@@ -17,7 +17,7 @@ def get_local_filepaths(local_savepath, remote_savepath):
     return files_from, files_to
 
 
-def cleanup_files(local_savepath, remote_savepath, rclone_name):
+def cleanup_files(local_savepath, remote_savepath, rclone_name, exclude_ext=()):
     files_from, files_to = get_local_filepaths(local_savepath, remote_savepath)
     Logger.debug('Upload: Source filepaths %s' % files_from)
     Logger.debug('Upload: Destination filepaths %s' % files_to)
@@ -29,7 +29,7 @@ def cleanup_files(local_savepath, remote_savepath, rclone_name):
         for src, dest in zip(files_from, files_to):
             (p, f) = split(dest)
             if not isdir(dest):
-                if f in res:
+                if f in res and not f.endswith(exclude_ext):
                     # delete the local file to save disk space
                     os.remove(src)
                     Logger.debug('Deleting: file %s exists on remote' % src)
