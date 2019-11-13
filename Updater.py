@@ -201,9 +201,11 @@ class Updater(multiprocessing.Process):
         dest = ':'.join([self.rclone_name, join(self.remote_savepath, 'videos/')])
         Logger.debug('Upload: Source folder %s' % source)
         Logger.debug('Upload: Destination folder %s' % dest)
-        p = Popen(["rclone", "copy", source, dest])
         try:
+            p = Popen(["rclone", "copy", source, dest])
             p.wait(timeout=50)
+        except OSError:
+            Logger.debug('Updater: Cannot upload videos to remote')
         except TimeoutExpired:
             p.kill()
         ManageLocalFiles.cleanup_files(source, join(self.remote_savepath, 'videos'), self.rclone_name)
@@ -213,9 +215,11 @@ class Updater(multiprocessing.Process):
         dest = ':'.join([self.rclone_name, join(self.remote_savepath, 'images/')])
         Logger.debug('Upload: Source folder %s' % source)
         Logger.debug('Upload: Destination folder %s' % dest)
-        p = Popen(["rclone", "copy", source, dest])
         try:
+            p = Popen(["rclone", "copy", source, dest])
             p.wait(timeout=50)
+        except OSError:
+            Logger.debug('Updater: Cannot upload images to remote')
         except TimeoutExpired:
             p.kill()
         # while experiment is running, don't delete .h5 file! it will only exist if user chooses to save processed data
@@ -369,12 +373,15 @@ class RepeatingTimer(threading.Thread):
                             self.args, success = self.sheet.get_params(self.cur_row)
                             counter += 1
                         self.cur_row += 1
-                    if self.args is not None:
-                        t_update = threading.Thread(name='update', target=self.function, args=(self.args,))
-                        t_update.start()
-                    else:
-                        t_update = threading.Thread(name='update', target=self.function, args=(self.default_args,))
-                        t_update.start()
+                    try:
+                        if self.args is not None:
+                            t_update = threading.Thread(name='update', target=self.function, args=(self.args,))
+                            t_update.start()
+                        else:
+                            t_update = threading.Thread(name='update', target=self.function, args=(self.default_args,))
+                            t_update.start()
+                    except OSError:
+                        Logger.debug('Repeating Timer: cannot update this round, likely a memory problem')
             except StopIteration:
                 Logger.info('Repeating Timer: ending repeating timer')
                 self.stop()
