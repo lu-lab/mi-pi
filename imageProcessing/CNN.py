@@ -1,6 +1,6 @@
 import threading
 import os
-from os.path import join
+from os.path import join, exists
 
 import cv2
 import h5py
@@ -147,11 +147,18 @@ class CNN:
             if self.save_processed_images:
                 if worm_box is not None:
                     with self.box_file_lock:
-                        with h5py.File(self.h5_file, 'w') as hf:
-                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
-                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
-                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
-                            hf.create_dataset(frame_scores_name, data=worm_scores)
+                        if exists(self.h5_file):
+                            with h5py.File(self.h5_file, 'a') as hf:
+                                frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                                frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=worm_scores)
+                        else:
+                            with h5py.File(self.h5_file, 'w') as hf:
+                                frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                                frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=worm_scores)
 
             if worm_box is not None:
                 worm_center_x, worm_center_y = self._get_box_center(worm_box)
@@ -177,11 +184,18 @@ class CNN:
             if self.save_processed_images:
                 if egg_boxes is not None:
                     with self.box_file_lock:
-                        with h5py.File(self.h5_file, 'w') as hf:
-                            frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
-                            hf.create_dataset(frame_boxes_name, data=egg_boxes)
-                            frame_scores_name = 'egg_score_frame_' + str(frame_no)
-                            hf.create_dataset(frame_scores_name, data=egg_scores)
+                        if exists(self.h5_file):
+                            with h5py.File(self.h5_file, 'a') as hf:
+                                frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                                frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=egg_scores)
+                        else:
+                            with h5py.File(self.h5_file, 'w') as hf:
+                                frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                                frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=egg_scores)
 
         except tf.compat.v1.errors.ResourceExhaustedError:
             # just return the number of eggs as None
@@ -211,17 +225,30 @@ class CNN:
 
             if self.save_processed_images:
                 with self.box_file_lock:
-                    with h5py.File(self.h5_file, 'w') as hf:
-                        if egg_boxes is not None:
-                            frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
-                            hf.create_dataset(frame_boxes_name, data=egg_boxes)
-                            frame_scores_name = 'egg_score_frame_' + str(frame_no)
-                            hf.create_dataset(frame_scores_name, data=egg_scores)
-                        if worm_box is not None:
-                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
-                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
-                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
-                            hf.create_dataset(frame_scores_name, data=worm_scores)
+                    if exists(self.h5_file):
+                        with h5py.File(self.h5_file, 'a') as hf:
+                            if egg_boxes is not None:
+                                frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                                frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=egg_scores)
+                            if worm_box is not None:
+                                frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                                frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=worm_scores)
+                    else:
+                        with h5py.File(self.h5_file, 'w') as hf:
+                            if egg_boxes is not None:
+                                frame_boxes_name = 'egg_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=egg_boxes)
+                                frame_scores_name = 'egg_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=egg_scores)
+                            if worm_box is not None:
+                                frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                                hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                                frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                                hf.create_dataset(frame_scores_name, data=worm_scores)
 
         except tf.compat.v1.errors.ResourceExhaustedError:
             # just return the center point as None, None and the number of eggs as None
