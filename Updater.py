@@ -263,8 +263,8 @@ class Updater(multiprocessing.Process):
                 Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
                 self.check_counter = 0
 
-            rand_int = random.randint(1, 100)
-            if rand_int <= self.sleep_percent and self.motion_with_feedback:
+            rand_int = random.randint(1, 10000)
+            if rand_int <= (self.sleep_percent*100) and self.motion_with_feedback:
                 # turn on the light
                 opto_on = str(1)
             else:
@@ -320,8 +320,8 @@ class Updater(multiprocessing.Process):
                 Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
                 self.check_counter = 0
 
-            rand_int = random.randint(1, 100)
-            if rand_int <= self.sleep_percent and self.motion_with_feedback:
+            rand_int = random.randint(1, 10000)
+            if rand_int <= (self.sleep_percent*100) and self.motion_with_feedback:
                 # turn on the light
                 opto_on = str(1)
             else:
