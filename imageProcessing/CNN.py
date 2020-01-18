@@ -1,15 +1,142 @@
 import threading
 import os
 from os.path import join, exists
+import re
 
 import cv2
 import h5py
 import numpy as np
-import tensorflow as tf
+try:
+    import tensorflow as tf
+    from object_detection.utils import label_map_util
+    from object_detection.utils import visualization_utils as vis_util
+except ImportError:
+    from tflite_runtime.interpreter import Interpreter
+    from tflite_runtime.interpreter import load_delegate
 from kivy.logger import Logger
 
-from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as vis_util
+
+class tflite_CNN:
+    def __init__(self,
+                 save_worm_loc=True,
+                 img_dir="",
+                 label_path="label_map.txt",
+                 model_path="edgetpu_model.tflite",
+                 video_resolution=(300,300)):
+
+        self.img_dir = img_dir
+        self.save_worm_loc = save_worm_loc
+        if self.save_worm_loc:
+            self.h5_file = join(self.img_dir, 'processed', 'data.h5')
+
+        # this should be the resolution of the video being saved to disk
+        self.video_width, self.video_height = video_resolution
+        self.box_file_lock = threading.Lock()
+        self.labels = self.load_labels(label_path)
+        self.interpreter = Interpreter(model_path,
+                                  experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
+        self.interpreter.allocate_tensors()
+        _, self.input_height, self.input_width, _ = self.interpreter.get_input_details()[0]['shape']
+
+    def load_labels(self, path):
+        """Loads the labels file. Supports files with or without index numbers."""
+        with open(path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            labels = {}
+            for row_number, content in enumerate(lines):
+                pair = re.split(r'[:\s]+', content.strip(), maxsplit=1)
+                if len(pair) == 2 and pair[0].strip().isdigit():
+                    labels[int(pair[0])] = pair[1].strip()
+                else:
+                    labels[row_number] = pair[0].strip()
+        return labels
+
+    def set_input_tensor(self, image):
+        """Sets the input tensor."""
+        tensor_index = self.interpreter.get_input_details()[0]['index']
+        input_tensor = self.interpreter.tensor(tensor_index)()[0]
+        input_tensor[:, :] = image
+
+    def get_output_tensor(self, index):
+        """Returns the output tensor at the given index."""
+        output_details = self.interpreter.get_output_details()[index]
+        tensor = np.squeeze(self.interpreter.get_tensor(output_details['index']))
+        return tensor
+
+    def detect_objects(self, image, threshold):
+        """Returns a list of detection results, each a dictionary of object info."""
+        self.set_input_tensor(self.interpreter, image)
+        self.interpreter.invoke()
+
+        # Get all output details
+        boxes = self.get_output_tensor(self.interpreter, 0)
+        classes = self.get_output_tensor(self.interpreter, 1)
+        scores = self.get_output_tensor(self.interpreter, 2)
+        count = int(self.get_output_tensor(self.interpreter, 3))
+
+        results = []
+        for i in range(count):
+            if scores[i] >= threshold:
+                result = {
+                    'bounding_box': boxes[i],
+                    'class_id': classes[i],
+                    'score': scores[i]
+                }
+                results.append(result)
+        return results
+
+    def screen_results(self, results, target_class, score_thresh):
+        boxes = []
+        scores = []
+        for obj in results:
+            if (obj['score'] > score_thresh) & (obj['class_id'] == target_class):
+                ymin, xmin, ymax, xmax = obj['bounding_box']
+                boxes.append([ymin, xmin, ymax, xmax])
+                scores.append(obj['score'])
+        return boxes, scores
+
+    def get_top_result(self, boxes, scores):
+        box = None
+        i = scores.index(max(scores))
+        box = boxes[i]
+        return box
+
+    def _get_box_center(self, box_coords):
+        ymin, xmin, ymax, xmax = box_coords
+        (left, right, top, bottom) = (xmin*self.video_width, xmax*self.video_width,
+                                      ymin*self.video_height, ymax*self.video_height)
+        center_x = ((right - left)/2) + left
+        center_y = ((bottom - top)/2) + top
+        return center_x, center_y
+
+    def get_worm_location(self, image, frame_no):
+        worm_center_x = None
+        worm_center_y = None
+
+        results = self.detect_objects(image, 0.6)
+        worm_boxes, worm_scores = self.screen_results(results, 0, .8)
+        worm_box = self.get_top_result(worm_boxes, worm_scores)
+
+        if self.save_worm_loc:
+            if worm_box is not None:
+                with self.box_file_lock:
+                    if exists(self.h5_file):
+                        with h5py.File(self.h5_file, 'a') as hf:
+                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=worm_scores)
+                    else:
+                        with h5py.File(self.h5_file, 'w') as hf:
+                            frame_boxes_name = 'worm_boxes_frame_' + str(frame_no)
+                            hf.create_dataset(frame_boxes_name, data=worm_boxes)
+                            frame_scores_name = 'worm_score_frame_' + str(frame_no)
+                            hf.create_dataset(frame_scores_name, data=worm_scores)
+
+        if worm_box is not None:
+            worm_center_x, worm_center_y = self._get_box_center(worm_box)
+
+        return worm_center_x, worm_center_y
 
 
 class CNN:

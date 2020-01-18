@@ -4,7 +4,30 @@
 <Interface>:
     orientation: 'vertical'
     id: interface
-    Camera:
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: '66dp'
+        id: top_panel
+        Button:
+            id: annotate_button
+            size_hint_x: 0.5
+            on_release: not camera.annotate_state
+            Image:
+                source: 'icons/annotate.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                allow_stretch: False
+        Button:
+            id: clear_annotation_button
+            size_hint_x: 0.5
+            on_release: camera.clear()
+            Image:
+                source: 'icons/clear_annotation.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                allow_stretch: False
+    MyCamera:
         id: camera
         resolution: root.im_res
         play: False

@@ -1,23 +1,6 @@
 '''
 Interface for mi-pi
 '''
-
-from kivy.app import App
-from kivy.clock import mainthread
-from kivy.logger import Logger
-from kivy.properties import StringProperty, BooleanProperty,\
-     NumericProperty, DictProperty, ReferenceListProperty
-from kivy.uix.settings import SettingsWithSidebar
-from kivy.uix.boxlayout import BoxLayout
-
-from settings import expSettings_json, imagingSettings_json, \
-    pressureSettings_json, imageProcessingSettings_json
-from fileTransfer import ManageLocalFiles
-from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
-    CURDIR, CONFIG_FILE, LOG_DIR
-from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
-import experiment
-
 import os
 from os.path import join, basename, exists
 from os import makedirs
@@ -30,6 +13,25 @@ import multiprocessing
 from shutil import copyfile
 import logging
 from subprocess import Popen, TimeoutExpired
+
+from kivy.app import App
+from kivy.clock import mainthread
+from kivy.logger import Logger
+from kivy.properties import StringProperty, BooleanProperty,\
+     NumericProperty, DictProperty, ReferenceListProperty
+from kivy.uix.settings import SettingsWithSidebar
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.camera import Camera
+from kivy.graphics import Line, Point
+
+from settings import expSettings_json, imagingSettings_json, \
+    pressureSettings_json, imageProcessingSettings_json
+from fileTransfer import ManageLocalFiles
+from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
+    CURDIR, CONFIG_FILE, LOG_DIR
+from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
+from imageProcessing.image_processing import get_mask_from_annotation
+import experiment
 
 Logger.setLevel(logging.DEBUG)
 
@@ -51,6 +53,8 @@ class Interface(BoxLayout):
         super(Interface, self).__init__(**kwargs)
         self.ids.capture_button.disabled = True
         self.ids.start_button.disabled = True
+        self.ids.annotate_button.disabled = True
+        self.ids.clear_annotation_button.disabled = True
         self.paired_system_id = None
         self._camera = self.ids.camera._camera
         self.config_file = CONFIG_FILE
@@ -289,6 +293,40 @@ class Interface(BoxLayout):
         # copy configuration to experiment folder
         file_to = '/'.join([self.local_savepath, basename(CONFIG_FILE)])
         copyfile(CONFIG_FILE, file_to)
+
+
+class MyCamera(Camera):
+    annotate_state = BooleanProperty(False)
+
+    def build(self):
+        self.clear_widgets()
+        texture = self.texture
+        if not texture:
+            return
+
+    def on_touch_down(self, touch):
+        if self.annotate_state:
+            with self.canvas:
+                touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
+       
+        else:
+            # if there are points in the line, attempt to flood fill
+            # to get a mask and display the mask over the video input
+            if touch.ud['line'].points:
+                # create empty image of appropriate resolution
+                width, height = self.interface.im_res
+                annotation_x, annotation_y = touch.ud['line'].points
+                lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
+                with self.canvas:
+                    # points in form (x1, y1, x2, y2)
+                    touch.ud['lawn'] = Point(points=lawn_points)
+
+    def on_touch_move(self, touch):
+        touch.ud["line"].points += [touch.x, touch.y]
+
+    def clear(self):
+        with self.canvas as canvas:
+            canvas.clear()
 
 
 class KivycamApp(App):

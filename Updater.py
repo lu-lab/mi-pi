@@ -382,6 +382,8 @@ class RepeatingTimer(threading.Thread):
                             t_update.start()
                     except OSError:
                         Logger.debug('Repeating Timer: cannot update this round, likely a memory problem')
+                    except MemoryError:
+                        Logger.debug('Repeating Timer: cannot update this round, likely a memory problem')
             except StopIteration:
                 Logger.info('Repeating Timer: ending repeating timer')
                 self.stop()
