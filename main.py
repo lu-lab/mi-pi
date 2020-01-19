@@ -407,8 +407,9 @@ class KivycamApp(App):
         })
 
         config.setdefaults('neural net', {
+            'neural_net_type': 'Faster R-CNN',
             'nn_count_eggs': 0,
-            'nn_distance_thresh': 10
+            'nn_distance_thresh': 10,
         })
 
         config.setdefaults('image delta', {
