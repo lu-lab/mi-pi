@@ -321,7 +321,8 @@ class MyCamera(Camera):
                     touch.ud["lawn"] = Point(points=lawn_points)
 
     def on_touch_move(self, touch):
-        touch.ud["line"].points += [touch.x, touch.y]
+        if "line" in touch.ud:
+            touch.ud["line"].points += [touch.x, touch.y]
 
     def clear(self):
         with self.canvas as canvas:
