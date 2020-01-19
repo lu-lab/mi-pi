@@ -22,7 +22,7 @@ from kivy.properties import StringProperty, BooleanProperty,\
 from kivy.uix.settings import SettingsWithSidebar
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.camera import Camera
-from kivy.graphics import Line, Point
+from kivy.graphics import Line, Point, InstructionGroup
 
 from settings import expSettings_json, imagingSettings_json, \
     pressureSettings_json, imageProcessingSettings_json
@@ -297,23 +297,40 @@ class Interface(BoxLayout):
 
 class MyCamera(Camera):
     annotate_state = BooleanProperty(False)
-    annotation_points = ListProperty([])
+    draw_obj = []
+
+    def build(self):
+        self.clear_widgets()
+        texture = self.texture
+        if not texture:
+            return
 
     def get_mask(self):
         # if there are points in the line, attempt to flood fill
         # to get a mask and display the mask over the video input
-        if self.annotation_points:
+        try:
+            line = self.draw_obj.pop(-1)
             width, height = self.interface.im_res
-            annotation_x, annotation_y = self.annotation_points
+            # line.points is probably in the form (x1, y1, x2, y2, ...)
+            annotation_x, annotation_y = line.points
             lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
                 Point(points=lawn_points)
+        except:
+            Logger.debug('CameraDisplay: No annotation to get mask for')
 
     def on_touch_down(self, touch):
         if self.annotate_state:
             with self.canvas:
                 touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
+
+    def on_touch_up(self, touch):
+        if self.annotate_state:
+            if "line" in touch.ud:
+                obj = InstructionGroup()
+                obj.add(touch.ud["line"])
+                self.draw_obj.append(obj)
 
     def on_touch_move(self, touch):
         if self.annotate_state:
@@ -323,10 +340,9 @@ class MyCamera(Camera):
                 with self.canvas:
                     touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
-            self.annotation_points = touch.ud["line"].points
-
     def clear(self):
-        self.canvas.clear()
+        item = self.draw_obj.pop(-1)
+        self.canvas.remove(item)
 
 
 class KivycamApp(App):
