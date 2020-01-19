@@ -305,6 +305,13 @@ class MyCamera(Camera):
         if not texture:
             return
 
+    def annotate(self):
+        self.annotate_state = not self.annotate_state
+        Logger.debug('CameraDisplay: annotate state is %s' % self.annotate_state)
+        if not self.annotate_state:
+            Logger.debug('CameraDisplay: computing mask')
+            self.get_mask()
+
     def get_mask(self):
         # if there are points in the line, attempt to flood fill
         # to get a mask and display the mask over the video input

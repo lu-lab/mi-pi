@@ -12,10 +12,7 @@
         Button:
             id: annotate_button
             size_hint_x: 0.5
-            on_release:
-                not camera.annotate_state
-                print(camera.annotate_state)
-            on_release: if not camera.annotate_state: camera.get_mask()
+            on_release: camera.annotate()
             Image:
                 source: 'icons/annotate.png'
                 center_x: self.parent.center_x
@@ -50,11 +47,11 @@
         Button:
             size_hint_x: 0.25
             on_release: app.open_settings()
+            on_release: camera.play = True
             on_release: capture_button.disabled = False
             on_release: start_button.disabled = False
             on_release: annotate_button.disabled = False
             on_release: clear_annotation_button.disabled = False
-            on_release: camera.play = True
             on_release: root.exp_image_source = 'icons/experiment_not_started.png'
             on_release: root.snapshot_image_source = 'icons/snapshot.png'
             on_release: root.exp_text = 'Run experiment'
