@@ -18,7 +18,7 @@ from kivy.app import App
 from kivy.clock import mainthread
 from kivy.logger import Logger
 from kivy.properties import StringProperty, BooleanProperty,\
-     NumericProperty, DictProperty, ReferenceListProperty
+     NumericProperty, DictProperty, ReferenceListProperty, ListProperty
 from kivy.uix.settings import SettingsWithSidebar
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.camera import Camera
@@ -297,29 +297,33 @@ class Interface(BoxLayout):
 
 class MyCamera(Camera):
     annotate_state = BooleanProperty(False)
+    annotation_points = ListProperty([])
+
+    def get_mask(self):
+        # if there are points in the line, attempt to flood fill
+        # to get a mask and display the mask over the video input
+        if self.annotation_points:
+            width, height = self.interface.im_res
+            annotation_x, annotation_y = self.annotation_points
+            lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
+            with self.canvas:
+                # points in form (x1, y1, x2, y2)
+                Point(points=lawn_points)
 
     def on_touch_down(self, touch):
         if self.annotate_state:
             with self.canvas:
                 touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
-        else:
-            # if there are points in the line, attempt to flood fill
-            # to get a mask and display the mask over the video input
-            if "line" in touch.ud:
-                width, height = self.interface.im_res
-                annotation_x, annotation_y = touch.ud['line'].points
-                lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
-                with self.canvas:
-                    # points in form (x1, y1, x2, y2)
-                    touch.ud["lawn"] = Point(points=lawn_points)
-
     def on_touch_move(self, touch):
-        if "line" in touch.ud:
-            touch.ud["line"].points += [touch.x, touch.y]
-        else:
-            with self.canvas:
-                touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
+        if self.annotate_state:
+            if "line" in touch.ud:
+                touch.ud["line"].points += [touch.x, touch.y]
+            else:
+                with self.canvas:
+                    touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
+
+            self.annotation_points = touch.ud["line"].points
 
     def clear(self):
         self.canvas.clear()
