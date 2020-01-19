@@ -317,16 +317,18 @@ class MyCamera(Camera):
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
                 Point(points=lawn_points)
-        except:
+        except IndexError:
             Logger.debug('CameraDisplay: No annotation to get mask for')
 
     def on_touch_down(self, touch):
         if self.annotate_state:
+            Logger.debug('CameraDisplay: touch down')
             with self.canvas:
                 touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
     def on_touch_up(self, touch):
         if self.annotate_state:
+            Logger.debug('CameraDisplay: touch up')
             if "line" in touch.ud:
                 obj = InstructionGroup()
                 obj.add(touch.ud["line"])
@@ -334,6 +336,7 @@ class MyCamera(Camera):
 
     def on_touch_move(self, touch):
         if self.annotate_state:
+            Logger.debug('CameraDisplay: touch move')
             if "line" in touch.ud:
                 touch.ud["line"].points += [touch.x, touch.y]
             else:
@@ -341,8 +344,11 @@ class MyCamera(Camera):
                     touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
     def clear(self):
-        item = self.draw_obj.pop(-1)
-        self.canvas.remove(item)
+        try:
+            item = self.draw_obj.pop(-1)
+            self.canvas.remove(item)
+        except IndexError:
+            Logger.debug('CameraDisplay: No annotation to clear')
 
 
 class KivycamApp(App):

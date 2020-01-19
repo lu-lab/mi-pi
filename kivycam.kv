@@ -13,6 +13,7 @@
             id: annotate_button
             size_hint_x: 0.5
             on_release: not camera.annotate_state
+                print(camera.annotate_state)
             on_release: if not camera.annotate_state: camera.get_mask()
             Image:
                 source: 'icons/annotate.png'
