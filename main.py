@@ -354,7 +354,7 @@ class MyCamera(Camera):
     def clear(self):
         try:
             for item in self.draw_obj:
-                self.canvas.remove(item.pop(-1))
+                self.canvas.remove(item)
             Logger.debug('CameraDisplay: annotation cleared')
         except IndexError:
             Logger.debug('CameraDisplay: No annotation to clear')
