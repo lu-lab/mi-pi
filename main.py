@@ -298,12 +298,6 @@ class Interface(BoxLayout):
 class MyCamera(Camera):
     annotate_state = BooleanProperty(False)
 
-    def build(self):
-        self.clear_widgets()
-        texture = self.texture
-        if not texture:
-            return
-
     def on_touch_down(self, touch):
         if self.annotate_state:
             with self.canvas:
@@ -323,10 +317,12 @@ class MyCamera(Camera):
     def on_touch_move(self, touch):
         if "line" in touch.ud:
             touch.ud["line"].points += [touch.x, touch.y]
+        else:
+            with self.canvas:
+                touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
     def clear(self):
-        with self.canvas as canvas:
-            canvas.clear()
+        self.canvas.clear()
 
 
 class KivycamApp(App):
