@@ -308,18 +308,17 @@ class MyCamera(Camera):
         if self.annotate_state:
             with self.canvas:
                 touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
-       
+
         else:
             # if there are points in the line, attempt to flood fill
             # to get a mask and display the mask over the video input
-            if touch.ud['line'].points:
-                # create empty image of appropriate resolution
+            if "line" in touch.ud:
                 width, height = self.interface.im_res
                 annotation_x, annotation_y = touch.ud['line'].points
                 lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
                 with self.canvas:
                     # points in form (x1, y1, x2, y2)
-                    touch.ud['lawn'] = Point(points=lawn_points)
+                    touch.ud["lawn"] = Point(points=lawn_points)
 
     def on_touch_move(self, touch):
         touch.ud["line"].points += [touch.x, touch.y]
