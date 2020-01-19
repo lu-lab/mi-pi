@@ -49,6 +49,8 @@
             on_release: app.open_settings()
             on_release: capture_button.disabled = False
             on_release: start_button.disabled = False
+            on_release: annotate_button.disabled = False
+            on_release: clear_annotation_button.disabled = False
             on_release: camera.play = True
             on_release: root.exp_image_source = 'icons/experiment_not_started.png'
             on_release: root.snapshot_image_source = 'icons/snapshot.png'
