@@ -320,7 +320,6 @@ class MyCamera(Camera):
         try:
             width, height = self.resolution
             lawn_points = get_mask_from_annotation(self.line_points, width, height)
-            print(lawn_points)
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
                 Point(points=lawn_points)

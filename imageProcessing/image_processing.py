@@ -16,42 +16,54 @@ import picamera.array
 from imageProcessing.CNN import CNN, tflite_CNN
 
 
-def interpolate_points(points):
-    new_points = np.empty([0, 0])
-    for i in points.shape(0):
+def interpolate_all_points(points):
+    interp_points = np.empty([0, 2])
+    for i in range(0, points.shape[0]-1):
         # take 2 points at a time, find the distance between them
-        norm = np.linalg.norm(points[i, :]-points[i+1, :], ord=2, axis=1)
-        norm = norm.dtype(int)
-        xvals = np.linspace(min(points[i, 0], points[i+1, 1]), max(points[i, 0], points[i+1, 1]), norm+1)
-        yinterp = np.interp(xvals, points[i:i+1, 0], points[i:i+1, 1])
-        new_points = np.append(new_points, [xvals, yinterp])
-    all_points = np.append(points, new_points)
-    return all_points
+        new_points = interpolate_points(points[i:i+2, :])
+        interp_points = np.concatenate((interp_points, new_points))
+    # finally, make sure the loop is closed by taking the first and last points
+    new_points = interpolate_points(points[::len(points)-1])
+    interp_points = np.concatenate((interp_points, new_points))
+    points = np.concatenate((points, interp_points))
+    return points
+
+
+def interpolate_points(points):
+    norm = np.linalg.norm(points[0, :] - points[1, :])
+    norm = int(norm)
+    xvals = np.linspace(min(points[0, 0], points[1, 0]), max(points[0, 0], points[1, 0]), norm + 1)
+    if points[1, 0] == points[0, 0]:
+        yinterp = np.linspace(min(points[0, 1], points[1, 1]), max(points[0, 1], points[1, 1]), norm + 1)
+    else:
+        slope = (points[1, 1] - points[0, 1]) / (points[1, 0] - points[0, 0])
+        yinterp = (xvals - points[0, 0]) * slope + points[0, 1]
+    new_points = np.concatenate((np.reshape(xvals, (-1, 1)), np.reshape(yinterp, (-1, 1))), axis=1)
+    return new_points
 
 
 def get_mask_from_annotation(points, width, height):
     points = np.asarray(points)
     points = np.reshape(points, (-1, 2))
-    print(points)
-    # points = interpolate_points(points)
+    points = interpolate_all_points(points)
     points = points.astype(int)
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
-    mask_out = np.zeros((height, width), np.uint8)
     # add points from line to image (add one to each x and y!)
     mask_in_x = [element + 1 for element in points[:, 0]]
     mask_in_y = [element + 1 for element in points[:, 1]]
-    print(mask_in_x)
-    print(mask_in_y)
     mask_in[mask_in_y, mask_in_x] = 255
-    cv2.floodFill(mask_out, mask_in, (points[1, 0], points[1, 1]), 255)
+    kernel = np.ones((5, 5), np.uint8)
+    mask_in = cv2.dilate(mask_in, kernel, iterations=1)
+    # the seedpoint at (0,0) implies that the region of interest isn't at the edge of the image
+    cv2.floodFill(mask_in, None, (0, 0), 255)
+    # invert the mask
+    mask_in = cv2.bitwise_not(mask_in)
     # check where the mask isn't zero
-    x, y = np.nonzero(mask_out)
+    x, y = np.nonzero(mask_in)
     # reorganize points into the right format for kivy Point
-    # should be able to use reshape again
-    lawn_points = []
-    for xel, yel in zip(x, y):
-        lawn_points.append(xel)
-        lawn_points.append(yel)
+    lawn_points = np.empty((x.size + y.size,), dtype=x.dtype)
+    lawn_points[0::2] = x
+    lawn_points[1::2] = y
     return lawn_points
 
 
