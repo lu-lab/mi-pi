@@ -19,6 +19,7 @@ from imageProcessing.CNN import CNN, tflite_CNN
 def get_mask_from_annotation(points, width, height):
     points = np.asarray(points)
     points = np.reshape(points, (-1, 2))
+    points = points.astype(int)
     print(points)
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
     mask_out = np.zeros((height, width), np.uint8)
