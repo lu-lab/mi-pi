@@ -296,8 +296,9 @@ class Interface(BoxLayout):
 
 
 class MyCamera(Camera):
-    annotate_state = BooleanProperty(False)
+    annotate_state = StringProperty('none')
     draw_obj = []
+    line_points = ListProperty()
 
     def build(self):
         self.clear_widgets()
@@ -306,20 +307,18 @@ class MyCamera(Camera):
             return
 
     def annotate(self):
-        self.annotate_state = not self.annotate_state
-        Logger.debug('CameraDisplay: annotate state is %s' % self.annotate_state)
-        if not self.annotate_state:
+        if self.annotate_state == 'annotated':
             Logger.debug('CameraDisplay: computing mask')
             self.get_mask()
+        self.annotate_state = 'annotating'
 
     def get_mask(self):
         # if there are points in the line, attempt to flood fill
         # to get a mask and display the mask over the video input
         try:
-            line = self.draw_obj.pop(-1)
             width, height = self.resolution
             # line.points is probably in the form (x1, y1, x2, y2, ...)
-            annotation_x, annotation_y = line.points
+            annotation_x, annotation_y = self.line_points
             lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
@@ -328,22 +327,24 @@ class MyCamera(Camera):
             Logger.debug('CameraDisplay: No annotation to get mask for')
 
     def on_touch_down(self, touch):
-        if self.annotate_state:
+        if self.annotate_state == 'annotating':
             Logger.debug('CameraDisplay: touch down')
             with self.canvas:
                 touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
 
     def on_touch_up(self, touch):
-        if self.annotate_state:
+        if self.annotate_state == 'annotating':
             Logger.debug('CameraDisplay: touch up')
             if "line" in touch.ud:
                 obj = InstructionGroup()
                 obj.add(touch.ud["line"])
                 self.draw_obj.append(obj)
+                self.line_points = touch.ud["line"].points
                 Logger.debug('CameraDisplay: line added')
+                self.annotate_state = 'annotated'
 
     def on_touch_move(self, touch):
-        if self.annotate_state:
+        if self.annotate_state == 'annotating':
             Logger.debug('CameraDisplay: touch move')
             if "line" in touch.ud:
                 touch.ud["line"].points += [touch.x, touch.y]
@@ -354,8 +355,11 @@ class MyCamera(Camera):
     def clear(self):
         try:
             for item in self.draw_obj:
+                print(item)
                 self.canvas.remove(item)
+            self.line_points = []
             Logger.debug('CameraDisplay: annotation cleared')
+            self.annotate_state = 'annotating'
         except IndexError:
             Logger.debug('CameraDisplay: No annotation to clear')
 
