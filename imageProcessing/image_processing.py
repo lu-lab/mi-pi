@@ -16,9 +16,24 @@ import picamera.array
 from imageProcessing.CNN import CNN, tflite_CNN
 
 
+def interpolate_points(points):
+    new_points = np.empty([0, 0])
+    for i in points.shape(0):
+        # take 2 points at a time, find the distance between them
+        norm = np.linalg.norm(points[i, :]-points[i+1, :], ord=2, axis=1)
+        norm = norm.dtype(int)
+        xvals = np.linspace(min(points[i, 0], points[i+1, 1]), max(points[i, 0], points[i+1, 1]), norm+1)
+        yinterp = np.interp(xvals, points[i:i+1, 0], points[i:i+1, 1])
+        new_points = np.append(new_points, [xvals, yinterp])
+    all_points = np.append(points, new_points)
+    return all_points
+
+
 def get_mask_from_annotation(points, width, height):
     points = np.asarray(points)
     points = np.reshape(points, (-1, 2))
+    print(points)
+    # points = interpolate_points(points)
     points = points.astype(int)
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
     mask_out = np.zeros((height, width), np.uint8)
@@ -32,6 +47,7 @@ def get_mask_from_annotation(points, width, height):
     # check where the mask isn't zero
     x, y = np.nonzero(mask_out)
     # reorganize points into the right format for kivy Point
+    # should be able to use reshape again
     lawn_points = []
     for xel, yel in zip(x, y):
         lawn_points.append(xel)
