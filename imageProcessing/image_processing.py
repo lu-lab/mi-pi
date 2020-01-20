@@ -28,7 +28,7 @@ def get_mask_from_annotation(points, width, height):
     print(mask_in_x)
     print(mask_in_y)
     mask_in[mask_in_y, mask_in_x] = 255
-    cv2.floodFill(mask_out, mask_in, [points[1, 1], points[1, 2]], 255)
+    cv2.floodFill(mask_out, mask_in, [points[1, 0], points[1, 1]], 255)
     # check where the mask isn't zero
     x, y = np.nonzero(mask_out)
     # reorganize points into the right format for kivy Point
