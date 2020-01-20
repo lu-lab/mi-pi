@@ -310,7 +310,9 @@ class MyCamera(Camera):
         if self.annotate_state == 'annotated':
             Logger.debug('CameraDisplay: computing mask')
             self.get_mask()
-        self.annotate_state = 'annotating'
+            self.annotate_state = 'none'
+        elif self.annotate_state == 'none':
+            self.annotate_state = 'annotating'
 
     def get_mask(self):
         # if there are points in the line, attempt to flood fill
@@ -321,8 +323,10 @@ class MyCamera(Camera):
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
                 Point(points=lawn_points)
-        except IndexError:
-            Logger.debug('CameraDisplay: No annotation to get mask for')
+        # except IndexError:
+        #     Logger.debug('CameraDisplay: No annotation to get mask for')
+        finally:
+            pass
 
     def on_touch_down(self, touch):
         if self.annotate_state == 'annotating':
