@@ -20,7 +20,6 @@ def get_mask_from_annotation(points, width, height):
     points = np.asarray(points)
     points = np.reshape(points, (-1, 2))
     points = points.astype(int)
-    print(points)
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
     mask_out = np.zeros((height, width), np.uint8)
     # add points from line to image (add one to each x and y!)
@@ -28,7 +27,7 @@ def get_mask_from_annotation(points, width, height):
     mask_in_y = [element + 1 for element in points[:, 1]]
     print(mask_in_x)
     print(mask_in_y)
-    mask_in[mask_in_x, mask_in_y] = 255
+    mask_in[mask_in_y, mask_in_x] = 255
     cv2.floodFill(mask_out, mask_in, [points[1, 1], points[1, 2]], 255)
     # check where the mask isn't zero
     x, y = np.nonzero(mask_out)
