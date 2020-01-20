@@ -317,9 +317,7 @@ class MyCamera(Camera):
         # to get a mask and display the mask over the video input
         try:
             width, height = self.resolution
-            # line.points is probably in the form (x1, y1, x2, y2, ...)
-            annotation_x, annotation_y = self.line_points
-            lawn_points = get_mask_from_annotation(annotation_x, annotation_y, width, height)
+            lawn_points = get_mask_from_annotation(self.line_points, width, height)
             with self.canvas:
                 # points in form (x1, y1, x2, y2)
                 Point(points=lawn_points)
@@ -359,7 +357,6 @@ class MyCamera(Camera):
                 self.canvas.remove(item)
             self.line_points = []
             Logger.debug('CameraDisplay: annotation cleared')
-            self.annotate_state = 'annotating'
         except IndexError:
             Logger.debug('CameraDisplay: No annotation to clear')
 

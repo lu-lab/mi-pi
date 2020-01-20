@@ -16,17 +16,19 @@ import picamera.array
 from imageProcessing.CNN import CNN, tflite_CNN
 
 
-
-
-def get_mask_from_annotation(annotation_x, annotation_y, width, height):
-
+def get_mask_from_annotation(points, width, height):
+    points = np.asarray(points)
+    points = np.reshape(points, (-1, 2))
+    print(points)
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
     mask_out = np.zeros((height, width), np.uint8)
     # add points from line to image (add one to each x and y!)
-    mask_in_x = [element + 1 for element in annotation_x]
-    mask_in_y = [element + 1 for element in annotation_y]
+    mask_in_x = [element + 1 for element in points[:, 1]]
+    mask_in_y = [element + 1 for element in points[:, 2]]
+    print(mask_in_x)
+    print(mask_in_y)
     mask_in[mask_in_x, mask_in_y] = 255
-    cv2.floodFill(mask_out, mask_in, [annotation_x(0), annotation_y(0)], 255)
+    cv2.floodFill(mask_out, mask_in, [points[1, 1], points[1, 2]], 255)
     # check where the mask isn't zero
     x, y = np.nonzero(mask_out)
     # reorganize points into the right format for kivy Point
