@@ -23,8 +23,8 @@ def get_mask_from_annotation(points, width, height):
     mask_in = np.zeros((height + 2, width + 2), np.uint8)
     mask_out = np.zeros((height, width), np.uint8)
     # add points from line to image (add one to each x and y!)
-    mask_in_x = [element + 1 for element in points[:, 1]]
-    mask_in_y = [element + 1 for element in points[:, 2]]
+    mask_in_x = [element + 1 for element in points[:, 0]]
+    mask_in_y = [element + 1 for element in points[:, 1]]
     print(mask_in_x)
     print(mask_in_y)
     mask_in[mask_in_x, mask_in_y] = 255
