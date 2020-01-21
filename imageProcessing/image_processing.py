@@ -61,9 +61,9 @@ def get_mask_from_annotation(points, width, height):
     # check where the mask isn't zero
     x, y = np.nonzero(mask_in)
     # reorganize points into the right format for kivy Point
-    lawn_points = np.empty((x.size + y.size,), dtype=x.dtype)
-    lawn_points[0::2] = x
-    lawn_points[1::2] = y
+    lawn_points = []
+    for xel, yel in zip(x, y):
+        lawn_points += [xel, yel]
     return lawn_points
 
 
