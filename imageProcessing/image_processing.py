@@ -52,7 +52,7 @@ def get_mask_from_annotation(points, width, height):
     mask_in_x = [element + 1 for element in points[:, 0]]
     mask_in_y = [element + 1 for element in points[:, 1]]
     mask_in[mask_in_y, mask_in_x] = 255
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     mask_in = cv2.dilate(mask_in, kernel, iterations=1)
     # the seedpoint at (0,0) implies that the region of interest isn't at the edge of the image
     cv2.floodFill(mask_in, None, (0, 0), 255)
@@ -60,6 +60,11 @@ def get_mask_from_annotation(points, width, height):
     mask_in = cv2.bitwise_not(mask_in)
     # check where the mask isn't zero
     y, x = np.nonzero(mask_in)
+    # if there are too many points, kivy can't display it, so downsample
+    if len(y) > 5001:
+        idx = np.random.choice(np.arange(len(x)), 5000, replace=False)
+        x = x[idx]
+        y = y[idx]
     # reorganize points into the right format for kivy Point
     lawn_points = []
     for xel, yel in zip(x, y):
