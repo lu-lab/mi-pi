@@ -59,7 +59,7 @@ def get_mask_from_annotation(points, width, height):
     # invert the mask
     mask_in = cv2.bitwise_not(mask_in)
     # check where the mask isn't zero
-    x, y = np.nonzero(mask_in)
+    y, x = np.nonzero(mask_in)
     # reorganize points into the right format for kivy Point
     lawn_points = []
     for xel, yel in zip(x, y):
