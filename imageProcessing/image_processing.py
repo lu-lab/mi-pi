@@ -479,7 +479,14 @@ class CurrentImage:
                 self.CNN = tflite_CNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
                                       img_dir=self.imaging_parameters['img_dir'],
                                       label_path=join(self.cwd, 'neural_net/label_map.txt'),
-                                      model_path=join(self.cwd, 'neural_net/mobilenetv2_ssd.tflite'),
+                                      model_path=join(self.cwd, 'neural_net/model.tflite'),
+                                      video_resolution=(self.fwidth, self.fheight))
+            elif self.imaging_parameters['neural_net_type'] == 'Mobilenet with Edge TPU':
+                self.CNN = tflite_CNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
+                                      img_dir=self.imaging_parameters['img_dir'],
+                                      label_path=join(self.cwd, 'neural_net/label_map.txt'),
+                                      model_path=join(self.cwd, 'neural_net/edgetpu_model.tflite'),
+                                      on_edge_tpu=True,
                                       video_resolution=(self.fwidth, self.fheight))
 
         Logger.debug('CurrentImage: initialized')

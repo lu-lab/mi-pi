@@ -89,11 +89,12 @@ class Interface(BoxLayout):
             self.start_experiment()
 
     def start_experiment(self):
+        camera = self.ids['camera']
+        self.imaging_params['annotation'] = camera.annotation_interior
         self.exp_text = 'Experimenting!'
         self.exp_image_source = 'icons/experiment_started.png'
         Logger.info('Interface: Experiment started')
         self.is_exp_running = not self.is_exp_running
-        camera = self.ids['camera']
         camera.play = False
         self.set_config()
         threading.Thread(target=self.check_stop).start()
@@ -299,6 +300,8 @@ class MyCamera(Camera):
     annotate_state = StringProperty('none')
     draw_obj = []
     line_points = ListProperty()
+    # a list of pixels describing the interior of a shape that the user has annotated
+    annotation_interior = ListProperty()
 
     def build(self):
         self.clear_widgets()
@@ -319,10 +322,10 @@ class MyCamera(Camera):
         # to get a mask and display the mask over the video input
         try:
             width, height = self.resolution
-            lawn_points = get_mask_from_annotation(self.line_points, width, height)
+            self.annotation_interior = get_mask_from_annotation(self.line_points, width, height)
             with self.canvas:
                 # points in form [x1, y1, x2, y2]
-                Point(points=lawn_points)
+                Point(points=self.annotation_interior)
         except IndexError:
             Logger.debug('CameraDisplay: No annotation to get mask for')
 

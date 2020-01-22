@@ -6,14 +6,16 @@ import re
 import cv2
 import h5py
 import numpy as np
+from kivy.logger import Logger
 try:
     import tensorflow as tf
     from object_detection.utils import label_map_util
     from object_detection.utils import visualization_utils as vis_util
+    Logger.debug('CNN: tensorflow loaded')
 except ImportError:
+    Logger.debug('CNN: loading tflite instead of tensorflow')
     from tflite_runtime.interpreter import Interpreter
     from tflite_runtime.interpreter import load_delegate
-from kivy.logger import Logger
 
 
 class tflite_CNN:
@@ -21,7 +23,8 @@ class tflite_CNN:
                  save_worm_loc=True,
                  img_dir="",
                  label_path="label_map.txt",
-                 model_path="edgetpu_model.tflite",
+                 on_edge_tpu=False,
+                 model_path="model.tflite",
                  video_resolution=(300,300)):
 
         self.img_dir = img_dir
@@ -33,8 +36,12 @@ class tflite_CNN:
         self.video_width, self.video_height = video_resolution
         self.box_file_lock = threading.Lock()
         self.labels = self.load_labels(label_path)
-        self.interpreter = Interpreter(model_path,
-                                  experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
+        if on_edge_tpu:
+            model_path = 'edgetpu_model.tflite'
+            self.interpreter = Interpreter(model_path,
+                                           experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
+        else:
+            self.interpreter = Interpreter(model_path)
         self.interpreter.allocate_tensors()
         _, self.input_height, self.input_width, _ = self.interpreter.get_input_details()[0]['shape']
 

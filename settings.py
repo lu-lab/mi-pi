@@ -241,7 +241,7 @@ imageProcessingSettings_json = json.dumps([
      'desc': 'Faster R-CNN is more accurate, Mobilenet is faster',
      'section': 'neural net',
      'key': 'neural_net_type',
-     'options': ['Faster R-CNN', 'Mobilenet']},
+     'options': ['Faster R-CNN', 'Mobilenet', 'Mobilenet with Edge TPU']},
     {'type': 'bool',
      'title': 'count number of eggs',
      'desc': 'estimate number of eggs in image',
