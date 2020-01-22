@@ -7,15 +7,13 @@ import cv2
 import h5py
 import numpy as np
 from kivy.logger import Logger
-try:
-    import tensorflow as tf
-    from object_detection.utils import label_map_util
-    from object_detection.utils import visualization_utils as vis_util
-    Logger.debug('CNN: tensorflow loaded')
-except ImportError:
-    Logger.debug('CNN: loading tflite instead of tensorflow')
-    from tflite_runtime.interpreter import Interpreter
-    from tflite_runtime.interpreter import load_delegate
+# try:
+#     import tensorflow as tf
+#     from object_detection.utils import label_map_util
+#     from object_detection.utils import visualization_utils as vis_util
+# except ImportError:
+from tflite_runtime.interpreter import Interpreter
+from tflite_runtime.interpreter import load_delegate
 
 
 class tflite_CNN:
