@@ -137,9 +137,7 @@ def delta_movement(im1, im2, frame_no, imaging_parameters):
 
 class ProcessorPool:
 
-    def __init__(self, num_threads, cur_image,
-                 motion_list, motion_list_lock,
-                 egg_count_list, egg_count_list_lock):
+    def __init__(self, num_threads, cur_image, motion_list, motion_list_lock, egg_count_list, egg_count_list_lock):
         self.done = False
         self.cur_image = cur_image
         self.lock = threading.Lock()

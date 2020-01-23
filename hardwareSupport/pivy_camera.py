@@ -326,7 +326,7 @@ class CameraSupport(threading.Thread):
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
                 self.camera.start_recording(self.proc_pool, format='mjpeg', splitter_port=3,
-                                            resize=(cur_image.tflite_CNN.width, cur_image.tflite_CNN.height),
+                                            resize=(cur_image.CNN.width, cur_image.CNN.height),
                                             use_video_port=True)
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():
@@ -485,7 +485,7 @@ class CameraSupport(threading.Thread):
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
                 self.camera.start_recording(self.proc_pool, format='mjpeg', splitter_port=3,
-                                            resize=(cur_image.tflite_CNN.width, cur_image.tflite_CNN.height),
+                                            resize=(cur_image.CNN.width, cur_image.CNN.height),
                                             use_video_port=True)
                 self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=1)
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
