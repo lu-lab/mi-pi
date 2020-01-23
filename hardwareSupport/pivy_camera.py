@@ -106,13 +106,18 @@ class CameraSupport(threading.Thread):
                 self.video_and_webstream()
 
             elif self.image_processing_mode != 'None' and not self.webstream:
-                if self.image_processing_mode == 'Mobilenet' or self.image_processing_mode == 'Mobilenet with Edge TPU':
-                    self.video_and_tflite_motion()
+                if self.image_processing_mode == 'neural net':
+                    if self.image_processing_params['neural_net_type'] == 'Mobilenet' \
+                            or self.image_processing_params['neural_net_type'] == 'Mobilenet with Edge TPU':
+                        self.video_and_tflite_motion()
+                    else:
+                        self.video_and_motion()
                 else:
                     self.video_and_motion()
 
             elif self.webstream and self.image_processing_mode != 'None':
-                if self.image_processing_mode == 'Mobilenet' or self.image_processing_mode == 'Mobilenet with Edge TPU':
+                if self.image_processing_params['neural_net_type'] == 'Mobilenet' \
+                        or self.image_processing_params['neural_net_type'] == 'Mobilenet with Edge TPU':
                     self.video_and_tflite_motion_and_webstream()
                 else:
                     self.video_and_motion_and_webstream()
