@@ -20,9 +20,9 @@ class tflite_CNN:
     def __init__(self,
                  save_worm_loc=True,
                  img_dir="",
-                 label_path="label_map.txt",
+                 label_path="neural_net/label_map.txt",
                  on_edge_tpu=False,
-                 model_path="model.tflite",
+                 model_path="neural_net/model.tflite",
                  video_resolution=(300,300)):
 
         self.img_dir = img_dir
@@ -35,7 +35,6 @@ class tflite_CNN:
         self.box_file_lock = threading.Lock()
         self.labels = self.load_labels(label_path)
         if on_edge_tpu:
-            model_path = 'edgetpu_model.tflite'
             self.interpreter = Interpreter(model_path,
                                            experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
         else:
