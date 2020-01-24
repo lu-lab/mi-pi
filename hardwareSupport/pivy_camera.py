@@ -226,7 +226,7 @@ class CameraSupport(threading.Thread):
         Logger.info('Camera: video and local motion detection')
         cur_image = CurrentImage(self.image_processing_params)
         self.proc_pool = ImageProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                       self.egg_count_list, self.egg_count_list_lock)
+                                            self.egg_count_list, self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
@@ -303,7 +303,7 @@ class CameraSupport(threading.Thread):
                 self.camera.framerate = int(float(self.fps))
                 self.video_and_motion()
             finally:
-               # wait a few seconds to make sure all image processing is wrapped up
+                # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
                 # stop recording gracefully
                 try:
@@ -326,7 +326,7 @@ class CameraSupport(threading.Thread):
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
                 self.camera.start_recording(self.proc_pool, format='mjpeg', splitter_port=3,
-                                            resize=(cur_image.CNN.width, cur_image.CNN.height),
+                                            resize=(cur_image.CNN.input_width, cur_image.CNN.input_height),
                                             use_video_port=True)
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():
@@ -363,7 +363,7 @@ class CameraSupport(threading.Thread):
                 self.camera.framerate = int(float(self.fps))
                 self.video_and_motion()
             finally:
-               # wait a few seconds to make sure all image processing is wrapped up
+                # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
                 # stop recording gracefully
                 try:
@@ -383,7 +383,8 @@ class CameraSupport(threading.Thread):
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = ImageProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock, self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = ImageProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock, self.egg_count_list,
+                                            self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
@@ -526,7 +527,7 @@ class CameraSupport(threading.Thread):
                 self.camera.framerate = int(float(self.fps))
                 self.video_and_motion()
             finally:
-               # wait a few seconds to make sure all image processing is wrapped up
+                # wait a few seconds to make sure all image processing is wrapped up
                 time.sleep(5)
                 # stop recording gracefully
                 try:
@@ -587,9 +588,9 @@ class CameraSupport(threading.Thread):
 
         self.width, self.height = self.image_processing_params['image_resolution']
         mvmnt = delta_movement(im1, im2, 0, self.image_processing_params)
-        LED_difference = delta_movement(im2, im3, 0, self.image_processing_params)
-        Logger.info('Camera: movement is %s, LED difference is %s' % (mvmnt, LED_difference))
-        return mvmnt, LED_difference
+        led_difference = delta_movement(im2, im3, 0, self.image_processing_params)
+        Logger.info('Camera: movement is %s, LED difference is %s' % (mvmnt, led_difference))
+        return mvmnt, led_difference
 
     def linescan_timelapse(self):
         ymax = self.ledMatrix.center_y + self.ledMatrix.radius
