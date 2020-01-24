@@ -236,6 +236,7 @@ class VideoProcessorPool(ProcessorPool):
                     if self.pool:
                         # if pool's not empty, grab a processor
                         self.processor = self.pool.pop()
+                        Logger.debug('VideoProcessorPool: processor grabbed')
                     else:
                         # No processor's available, we'll have to skip
                         # this frame; you may want to print a warning
@@ -246,6 +247,7 @@ class VideoProcessorPool(ProcessorPool):
                     try:
                         self.processor.stream.write(image)
                         self.processor.im_event.set()
+                        Logger.debug('VideoProcessorPool: im_event is set')
                     except MemoryError:
                         Logger.debug('VideoProcessorPool: memory error whilst writing image to stream')
 
@@ -411,14 +413,14 @@ class VideoProcessor(threading.Thread):
         while not self.terminated:
             # Wait for an image to be added to the queue
             if self.im_event.wait(1):
-
+                Logger.debug('VideoProcessor: frame arrived')
                 try:
                     t1 = time.time()
                     self.stream.seek(0)
                     im = Image.open(self.stream).convert('RGB').resize(
                                     (self.owner.cur_image.CNN.input_width,
                                      self.owner.cur_image.CNN.input_height), Image.ANTIALIAS)
-                    Logger.debug('VideoProcessor: image converted')
+                    Logger.debug('VideoProcessor: frame converted')
 
                     # no need to save the video separately, as it's already being saved.
 
