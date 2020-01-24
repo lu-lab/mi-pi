@@ -326,8 +326,7 @@ class CameraSupport(threading.Thread):
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
                 self.camera.start_recording(self.proc_pool, format='mjpeg', splitter_port=3,
-                                            resize=(cur_image.CNN.input_width, cur_image.CNN.input_height),
-                                            use_video_port=True)
+                                            resize=(cur_image.CNN.input_width, cur_image.CNN.input_height))
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():
                     Logger.debug('Camera: video recording started')
