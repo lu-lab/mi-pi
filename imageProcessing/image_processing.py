@@ -422,10 +422,8 @@ class VideoProcessor(threading.Thread):
                     im = Image.open(self.stream).convert('RGB').resize(
                                     (self.owner.cur_image.CNN.input_width,
                                      self.owner.cur_image.CNN.input_height), Image.ANTIALIAS)
-                    Logger.debug('VideoProcessor: frame converted')
 
                     # no need to save the video separately, as it's already being saved.
-
                     with self.owner.cur_image.CNN.lock:
                         new_worm_loc_x, new_worm_loc_y = \
                             self.owner.cur_image.CNN.get_worm_location(im, self.owner.frame_count)
@@ -447,6 +445,8 @@ class VideoProcessor(threading.Thread):
 
                     Logger.info('VideoProcessor: image processed, time elapsed is %s, frame no is %s'
                                 % (time_elapsed, self.owner.frame_count))
+                except OSError:
+                    Logger.debug('VideoProcessor: dropped frame')
 
                 finally:
                     self.stream.seek(0)
