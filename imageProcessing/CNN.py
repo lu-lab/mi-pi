@@ -71,14 +71,14 @@ class tfliteCNN:
 
     def detect_objects(self, image, threshold):
         """Returns a list of detection results, each a dictionary of object info."""
-        self.set_input_tensor(self.interpreter, image)
+        self.set_input_tensor(image)
         self.interpreter.invoke()
 
         # Get all output details
-        boxes = self.get_output_tensor(self.interpreter, 0)
-        classes = self.get_output_tensor(self.interpreter, 1)
-        scores = self.get_output_tensor(self.interpreter, 2)
-        count = int(self.get_output_tensor(self.interpreter, 3))
+        boxes = self.get_output_tensor(0)
+        classes = self.get_output_tensor(1)
+        scores = self.get_output_tensor(2)
+        count = int(self.get_output_tensor(3))
 
         results = []
         for i in range(count):
