@@ -137,14 +137,14 @@ def delta_movement(im1, im2, frame_no, imaging_parameters):
 
 class ProcessorPool:
 
-    def __init__(self, num_threads, cur_image, motion_list, motion_list_lock, egg_count_list, egg_count_list_lock):
+    def __init__(self, **kwargs):
         self.done = False
-        self.cur_image = cur_image
+        self.cur_image = kwargs['current_image']
         self.lock = threading.Lock()
-        self.motion_list = motion_list
-        self.motion_list_lock = motion_list_lock
-        self.egg_count_list = egg_count_list
-        self.egg_count_list_lock = egg_count_list_lock
+        self.motion_list = kwargs['motion_list']
+        self.motion_list_lock = kwargs['motion_list_lock']
+        self.egg_count_list = kwargs['egg_list']
+        self.egg_count_list_lock = kwargs['egg_list_lock']
         self.processor = None
         self.pool = None
         Logger.info('ProcessorPool: initialized')
@@ -174,10 +174,10 @@ class ProcessorPool:
 
 
 class ImageProcessorPool(ProcessorPool):
-    def __init__(self, *args):
-        super(ProcessorPool).__init__(*args)
-        self.frame_queue = queue.Queue(maxsize=args[0])
-        self.pool = [ImageProcessor(self) for i in range(args[0])]
+    def __init__(self, **kwargs):
+        super(ProcessorPool).__init__(**kwargs)
+        self.frame_queue = queue.Queue(maxsize=kwargs['num_threads'])
+        self.pool = [ImageProcessor(self) for i in range(kwargs['num_threads'])]
 
     def write(self, image):
         if not self.done:
@@ -222,11 +222,11 @@ class ImageProcessorPool(ProcessorPool):
 
 
 class VideoProcessorPool(ProcessorPool):
-    def __init__(self, *args):
-        super(ProcessorPool).__init__(*args)
+    def __init__(self, **kwargs):
+        super(ProcessorPool).__init__(kwargs['num_threads'])
         self.is_first_frame = True
         self.frame_count = 0
-        self.pool = [VideoProcessor(self) for i in range(args[0])]
+        self.pool = [VideoProcessor(self) for i in range(kwargs['num_threads'])]
 
     def write(self, image):
         if not self.done:

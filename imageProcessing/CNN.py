@@ -24,7 +24,7 @@ class tfliteCNN:
                  label_path="neural_net/label_map.txt",
                  on_edge_tpu=False,
                  model_path="neural_net/model.tflite",
-                 video_resolution=(300,300)):
+                 video_resolution=(300, 300)):
 
         self.img_dir = img_dir
         self.save_worm_loc = save_worm_loc

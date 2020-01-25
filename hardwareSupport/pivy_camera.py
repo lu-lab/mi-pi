@@ -225,8 +225,12 @@ class CameraSupport(threading.Thread):
     def video_and_motion(self):
         Logger.info('Camera: video and local motion detection')
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = ImageProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                            self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = ImageProcessorPool(num_threads=3,
+                                            current_image=cur_image,
+                                            motion_list=self.motion_list,
+                                            motion_list_lock=self.motion_list_lock,
+                                            egg_list=self.egg_count_list,
+                                            egg_list_lock=self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
@@ -318,8 +322,12 @@ class CameraSupport(threading.Thread):
     def video_and_tflite_motion(self):
         Logger.info('Camera: video and tflite motion detection')
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = VideoProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                            self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = VideoProcessorPool(num_threads=3,
+                                            current_image=cur_image,
+                                            motion_list=self.motion_list,
+                                            motion_list_lock=self.motion_list_lock,
+                                            egg_list=self.egg_count_list,
+                                            egg_list_lock=self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
@@ -382,8 +390,12 @@ class CameraSupport(threading.Thread):
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = ImageProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock, self.egg_count_list,
-                                            self.egg_count_list_lock)
+        self.proc_pool = ImageProcessorPool(num_threads=3,
+                                            current_image=cur_image,
+                                            motion_list=self.motion_list,
+                                            motion_list_lock=self.motion_list_lock,
+                                            egg_list=self.egg_count_list,
+                                            egg_list_lock=self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
@@ -477,8 +489,12 @@ class CameraSupport(threading.Thread):
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = VideoProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                            self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = VideoProcessorPool(num_threads=3,
+                                            current_image=cur_image,
+                                            motion_list=self.motion_list,
+                                            motion_list_lock=self.motion_list_lock,
+                                            egg_list=self.egg_count_list,
+                                            egg_list_lock=self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
