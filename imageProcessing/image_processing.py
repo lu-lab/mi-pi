@@ -223,7 +223,7 @@ class ImageProcessorPool(ProcessorPool):
 
 class VideoProcessorPool(ProcessorPool):
     def __init__(self, **kwargs):
-        super(ProcessorPool).__init__(kwargs['num_threads'])
+        super(ProcessorPool).__init__(**kwargs)
         self.is_first_frame = True
         self.frame_count = 0
         self.pool = [VideoProcessor(self) for i in range(kwargs['num_threads'])]
