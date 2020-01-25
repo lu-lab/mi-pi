@@ -175,9 +175,10 @@ class ProcessorPool:
 
 class ImageProcessorPool(ProcessorPool):
     def __init__(self, **kwargs):
-        super(ProcessorPool).__init__(**kwargs)
-        self.frame_queue = queue.Queue(maxsize=kwargs['num_threads'])
-        self.pool = [ImageProcessor(self) for i in range(kwargs['num_threads'])]
+        self.num_threads = kwargs.pop('num_threads')
+        super(ImageProcessorPool).__init__(**kwargs)
+        self.frame_queue = queue.Queue(maxsize=self.num_threads)
+        self.pool = [ImageProcessor(self) for i in range(self.num_threads)]
 
     def write(self, image):
         if not self.done:
@@ -223,10 +224,11 @@ class ImageProcessorPool(ProcessorPool):
 
 class VideoProcessorPool(ProcessorPool):
     def __init__(self, **kwargs):
-        super(ProcessorPool).__init__(**kwargs)
+        self.num_threads = kwargs.pop('num_threads')
+        super(VideoProcessorPool).__init__(**kwargs)
         self.is_first_frame = True
         self.frame_count = 0
-        self.pool = [VideoProcessor(self) for i in range(kwargs['num_threads'])]
+        self.pool = [VideoProcessor(self) for i in range(self.num_threads)]
 
     def write(self, image):
         if not self.done:
