@@ -103,8 +103,9 @@ class tfliteCNN:
 
     def get_top_result(self, boxes, scores):
         box = None
-        i = scores.index(max(scores))
-        box = boxes[i]
+        if scores:
+            i = scores.index(max(scores))
+            box = boxes[i]
         return box
 
     def _get_box_center(self, box_coords):
