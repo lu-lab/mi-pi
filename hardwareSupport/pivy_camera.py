@@ -318,8 +318,8 @@ class CameraSupport(threading.Thread):
     def video_and_tflite_motion(self):
         Logger.info('Camera: video and tflite motion detection')
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                       self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = VideoProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
+                                            self.egg_count_list, self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
@@ -473,20 +473,19 @@ class CameraSupport(threading.Thread):
                 self.stop_exp_event.set()
 
     def video_and_tflite_motion_and_webstream(self):
-        Logger.info('Camera: video and tflite motion detection')
+        Logger.info('Camera: video and tflite motion detection and webstream')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
-        self.proc_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
-                                       self.egg_count_list, self.egg_count_list_lock)
+        self.proc_pool = VideoProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
+                                            self.egg_count_list, self.egg_count_list_lock)
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
                 start_time = time.time()
                 Logger.info('Camera: recording started, start time is: %s' % start_time)
                 self.camera.start_recording(self.proc_pool, format='mjpeg', splitter_port=3,
-                                            resize=(cur_image.CNN.width, cur_image.CNN.height),
-                                            use_video_port=True)
+                                            resize=(cur_image.CNN.input_width, cur_image.CNN.input_height))
                 self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=1)
                 Logger.info('Camera: capture at time %s' % time.strftime("%Y%m%d_%H%M%S"))
                 while not self.is_exp_done() and not self.stop_cam_event.is_set():

@@ -16,7 +16,8 @@ from tflite_runtime.interpreter import Interpreter
 from tflite_runtime.interpreter import load_delegate
 
 
-class tflite_CNN:
+class tfliteCNN:
+
     def __init__(self,
                  save_worm_loc=True,
                  img_dir="",
@@ -41,6 +42,7 @@ class tflite_CNN:
             self.interpreter = Interpreter(model_path)
         self.interpreter.allocate_tensors()
         _, self.input_height, self.input_width, _ = self.interpreter.get_input_details()[0]['shape']
+        Logger.debug('TfliteCNN: initialized successfully')
 
     def load_labels(self, path):
         """Loads the labels file. Supports files with or without index numbers."""

@@ -13,7 +13,7 @@ from kivy.logger import Logger
 import picamera
 import picamera.array
 
-from imageProcessing.CNN import CNN, tflite_CNN
+from imageProcessing.CNN import CNN, tfliteCNN
 
 
 def interpolate_all_points(points):
@@ -476,18 +476,18 @@ class CurrentImage:
                 self.CNN = CNN(self.imaging_parameters['save_processed_images'], self.imaging_parameters['img_dir'],
                             (self.fwidth, self.fheight))
             elif self.imaging_parameters['neural_net_type'] == 'Mobilenet':
-                self.CNN = tflite_CNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
-                                      img_dir=self.imaging_parameters['img_dir'],
-                                      label_path=join(self.cwd, 'neural_net/label_map.txt'),
-                                      model_path=join(self.cwd, 'neural_net/model.tflite'),
-                                      video_resolution=(self.fwidth, self.fheight))
+                self.CNN = tfliteCNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
+                                     img_dir=self.imaging_parameters['img_dir'],
+                                     label_path=join(self.cwd, 'neural_net/label_map.txt'),
+                                     model_path=join(self.cwd, 'neural_net/model.tflite'),
+                                     video_resolution=(self.fwidth, self.fheight))
             elif self.imaging_parameters['neural_net_type'] == 'Mobilenet with Edge TPU':
-                self.CNN = tflite_CNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
-                                      img_dir=self.imaging_parameters['img_dir'],
-                                      label_path=join(self.cwd, 'neural_net/label_map.txt'),
-                                      model_path=join(self.cwd, 'neural_net/edgetpu_model.tflite'),
-                                      on_edge_tpu=True,
-                                      video_resolution=(self.fwidth, self.fheight))
+                self.CNN = tfliteCNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
+                                     img_dir=self.imaging_parameters['img_dir'],
+                                     label_path=join(self.cwd, 'neural_net/label_map.txt'),
+                                     model_path=join(self.cwd, 'neural_net/edgetpu_model.tflite'),
+                                     on_edge_tpu=True,
+                                     video_resolution=(self.fwidth, self.fheight))
 
         Logger.debug('CurrentImage: initialized')
 
