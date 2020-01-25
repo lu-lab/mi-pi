@@ -25,7 +25,7 @@ class tfliteCNN:
                  on_edge_tpu=False,
                  model_path="neural_net/model.tflite",
                  video_resolution=(300, 300)):
-
+        self.lock = threading.Lock()
         self.img_dir = img_dir
         self.save_worm_loc = save_worm_loc
         if self.save_worm_loc:
