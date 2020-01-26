@@ -476,7 +476,7 @@ class CurrentImage:
             # load the frozen inference graph and label map, and set up general parameters
             if self.imaging_parameters['neural_net_type'] == 'Faster R-CNN':
                 self.CNN = CNN(self.imaging_parameters['save_processed_images'], self.imaging_parameters['img_dir'],
-                            (self.fwidth, self.fheight))
+                              (self.fwidth, self.fheight))
             elif self.imaging_parameters['neural_net_type'] == 'Mobilenet':
                 self.CNN = tfliteCNN(save_worm_loc=self.imaging_parameters['save_processed_images'],
                                      img_dir=self.imaging_parameters['img_dir'],
