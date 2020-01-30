@@ -121,7 +121,7 @@ class tfliteCNN:
         worm_center_y = None
 
         results = self.detect_objects(image, 0.6)
-        worm_boxes, worm_scores = self.screen_results(results, 0, .5)
+        worm_boxes, worm_scores = self.screen_results(results, 0, .01)
         worm_box = self.get_top_result(worm_boxes, worm_scores)
 
         if self.save_worm_loc:

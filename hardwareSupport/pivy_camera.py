@@ -82,6 +82,7 @@ class CameraSupport(threading.Thread):
         # set resolution and fps
         self.camera = picamera.PiCamera(resolution=self.resolution)
         self.camera.framerate = int(float(self.fps))
+        self.camera.color_effects = (128, 128)
 
         # determine the difference in images taken under blue LEDs on vs. off.
         self.image_processing_params['strel'] = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))

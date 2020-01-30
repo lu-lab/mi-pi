@@ -182,15 +182,16 @@ class Updater(multiprocessing.Process):
         paired_led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell,
                                                   spreadsheet_tab=self.sheet.paired_spreadsheet_range)
         try:
-            return float(paired_led_dosage[0][0])*(self.led_on_time/self.sheet.time_res)
+            return float(paired_led_dosage[0][0])
         except ValueError:
+            Logger.debug('Updater: unable to get paired led dosage')
             return 0
 
     def get_dosage(self):
         led_dosage = self.sheet.read_sheet(cell_range=self.sheet.led_dosage_cell,
                                            spreadsheet_tab=self.sheet.spreadsheet_range)
         try:
-            return float(led_dosage[0][0])*(self.led_on_time/self.sheet.time_res)
+            return float(led_dosage[0][0])
         except ValueError:
             Logger.debug('Updater: unable to get led dosage')
             return 0
@@ -230,8 +231,6 @@ class Updater(multiprocessing.Process):
                                        exclude_ext='.h5')
 
     def neural_net_motion_decision(self, motion_list):
-        # set up a default opto_on to return
-        opto_on = str(0)
 
         if len(motion_list) > 0:
             self.motion_average = float(mean(motion_list))
@@ -242,7 +241,7 @@ class Updater(multiprocessing.Process):
         if self.is_driving_system:
             if self.motion_average != 'None':
                 # if worm's movement is above the set threshold, turn the light off
-                if self.motion_average > self.nn_motion_thresh:
+                if self.motion_average > self.nn_motion_thresh or not self.motion_with_feedback:
                     opto_on = str(0)
                 else:
                     rand_int = random.randint(1, 100)
@@ -257,18 +256,20 @@ class Updater(multiprocessing.Process):
         else:
             self.check_counter += 1
             if self.check_counter == self.check_led_dosage_interval:
+                # i will make the assumption that the light duty cycle is the same on both systems
                 self.paired_led_dosage_percent = self.get_paired_dosage()
                 self.led_dosage_percent = self.get_dosage()
                 Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
                             (self.paired_led_dosage_percent, self.led_dosage_percent))
                 # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
                 self.sleep_percent = self.paired_led_dosage_percent + \
-                                     (self.paired_led_dosage_percent - self.led_dosage_percent)
+                    (self.paired_led_dosage_percent - self.led_dosage_percent)
                 Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
                 self.check_counter = 0
 
-            rand_int = random.randint(1, 10000)
-            if rand_int <= (self.sleep_percent*100) and self.motion_with_feedback:
+            rand_int = random.randint(1, 100)
+            Logger.debug('Updater: sleep percent is %s' % self.sleep_percent)
+            if rand_int <= self.sleep_percent and self.motion_with_feedback:
                 # turn on the light
                 opto_on = str(1)
             else:
@@ -320,12 +321,12 @@ class Updater(multiprocessing.Process):
                             (self.paired_led_dosage_percent, self.led_dosage_percent))
                 # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
                 self.sleep_percent = self.paired_led_dosage_percent + \
-                                     (self.paired_led_dosage_percent - self.led_dosage_percent)
+                    (self.paired_led_dosage_percent - self.led_dosage_percent)
                 Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
                 self.check_counter = 0
 
-            rand_int = random.randint(1, 10000)
-            if rand_int <= (self.sleep_percent*100) and self.motion_with_feedback:
+            rand_int = random.randint(1, 100)
+            if rand_int <= self.sleep_percent and self.motion_with_feedback:
                 # turn on the light
                 opto_on = str(1)
             else:
