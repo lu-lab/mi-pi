@@ -4,4 +4,4 @@ is a scalable microscopy system for Raspberry Pi. Here we include software and h
 
 ## [Software Installation](docs/installation.md)
 ## [Building the Hardware](docs/hardware.md)
-## [How to Use](docs/experiment.md)
+## [How to Use](docs/useit.md)
