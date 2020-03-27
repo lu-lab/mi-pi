@@ -1,0 +1,43 @@
+﻿Item,Source,Number per system,Cost (as of 1/31/2020) in USD,Total Cost,Notes
+Flexible Silicone Neon-Like LED Strip 1-M Blue,https://www.adafruit.com/product/3867,0.333333333,13.95,4.65,
+Femtobuck LED Driver,https://www.sparkfun.com/products/13716,1,7.95,7.95,
+Screw Terminals 3.5 mm Pitch (2-Pin),https://www.sparkfun.com/products/8084,1,0.95,0.95,
+SparkFun Humidity and Temperature Sensor Breakout - Si7021,https://www.sparkfun.com/products/13763,1,7.95,7.95,
+Break Away Male Headers - Right Angle,https://www.sparkfun.com/products/553,1,1.95,1.95,
+"Jumper Wires Premium 6"" M/F Pack of 10",https://www.sparkfun.com/products/9140,1,3.95,3.95,
+Female DC Power,https://www.adafruit.com/product/368,1,2,2,
+Teensy 3.5 without headers,https://www.adafruit.com/product/3267,1,24.95,24.95,
+32x32 RGB LED Matrix Panel - 4mm Pitch,https://www.adafruit.com/product/607,1,49.95,49.95,
+SmartMatrix SmartLED Shield (V4) for Teensy,https://www.adafruit.com/product/1902,1,19.95,19.95,
+Connective Terminal Strip 1 Circuit,https://www.digikey.com/product-detail/en/te-connectivity-amp-connectors/1776293-1/A112765-ND/1649088,1,1.18,1.18,
+12V 1A power adapter for LED strip,https://www.adafruit.com/product/798,1,8.95,8.95,
+SmartiPi Touch 2,https://smarticase.com/collections/all/products/smartipi-touch-2,1,27.99,27.99,
+Building block compatible camera case,https://smarticase.com/collections/all/products/smartipi-camera-case,1,4.99,4.99,
+Raspberry Pi Camera Board v2 - 8 MP,https://www.adafruit.com/product/3099,1,29.95,29.95,
+Lens Adjustment Tool for Raspberry Pi Camera,https://www.adafruit.com/product/3518,1,0.95,0.95,
+"Pi Foundation Display - 7"" Touchscreen Display for Raspberry Pi",https://www.adafruit.com/product/2718,1,79.95,79.95,
+Raspberry Pi 3 - Model B+,https://www.adafruit.com/product/3775,1,35,35,
+64 GB microSD card,https://www.amazon.com/Samsung-MicroSD-Adapter-MB-ME64GA-AM/dp/B06XX29S9Q/ref=sr_1_3?crid=2D79V7VXFTHOP&keywords=64gb+micro+sd+card&qid=1580501559&sprefix=64+GB%2Caps%2C244&sr=8-3,1,11.99,11.99,
+microSD card reader/writer,https://www.amazon.com/IOGEAR-MicroSD-Reader-Writer-GFR204SD/dp/B0046TJG1U/ref=sr_1_3?keywords=micro+sd+card+reader+writer&qid=1580501631&sr=8-3,1,6.43,6.43,"Many computers have a built-in microSD card reader, so this may not be necessary"
+5V 3A power supply for Raspberry Pi,https://www.amazon.com/Raspberry-Micro-USB-Charger-Raspberry-Pi-Adapter/dp/B00L88M8TE/ref=sr_1_3?crid=2050ACGPT76EX&keywords=5v+3a+power+supply+micro+usb&qid=1580501739&sprefix=5V+3A+power+supply+micro+usb%2Caps%2C348&sr=8-3,1,13.9,13.9,
+microUSB to USB A cable (data capable),https://www.amazon.com/6in-Micro-USB-Cable-6-inches/dp/B003YKX6WM/ref=sr_1_5?keywords=micro+usb+to+usb+a+cable+1ft+data+capable&qid=1580501830&sr=8-5,1,5.28,5.28,
+,,,,,
+,,,Total,350.81,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+Optional items,,,,,
+Raspberry Pi 4,https://www.adafruit.com/product/4295,1,35,,"The Pi 4 with 1GB RAM is the same price as the Rpi 3 B+, so you will likely see speed improvements, but mi-pi will use a substantial amount of the RAM. Pi 4s are available with more RAM, but they will cost up to $20 more"
+Coral Edge TPU,https://coral.ai/products/accelerator,1,75,,"If you would like to do real time object detection and data compression, this USB gadget will allow you to do so."
+,,,,,
+,,,,,
+,,,,,
+Assembly Tools,"You can probably find these tools in most university electronics labs, or certainly a maker space of some sort. Other than your hands, here's what you will need",,,,
+Soldering Station,https://www.amazon.com/Weller-WLC100-40-Watt-Soldering-Station/dp/B000AS28UC,1,26.94,,
+Soldering Station,https://www.amazon.com/WYCTIN-Solder-Electrical-Soldering-0-11lbs/dp/B071G1J3W6/ref=pd_bxgy_img_3/137-5298926-0941405?_encoding=UTF8&pd_rd_i=B071G1J3W6&pd_rd_r=dd2e3502-c296-4781-9181-2316844678e6&pd_rd_w=E5MKw&pd_rd_wg=3bnlR&pf_rd_p=fd08095f-55ff-4a15-9b49-4a1a719225a9&pf_rd_r=1FMA26DMZZGFA2C0TX9V&psc=1&refRID=1FMA26DMZZGFA2C0TX9V,1,8.99,,You'll only need a very small amount of solder for each system
+small screwdriver set,https://smile.amazon.com/Screwdriver-Premium-Multipurpose-Magnetic-DIY/dp/B07H2CDVCH/ref=sr_1_34?keywords=screwdriver&qid=1580501094&s=hi&sr=1-34,1,5.49,,
+electrical tape,https://www.amazon.com/Scotch-Super-Vinyl-Electrical-Tape/dp/B00004WCCL/ref=sr_1_3?keywords=electrical+tape&qid=1580501198&sr=8-3,1,3.98,,You'll only need a few small pieces of this for each system
+20 ft of 20 AWG wire (black and red),https://www.amazon.com/BNTECHGO-Silicone-Temperature-Resistant-Flexible/dp/B01AAX64EC/ref=sr_1_2?keywords=20g+insulated+wire&qid=1580501321&sr=8-2,1,5.98,,You'll only need a small fraction of this for each system
+Multi-size wire stripper & cutter ,https://www.adafruit.com/product/147,1,6.95,,

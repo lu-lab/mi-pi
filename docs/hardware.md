@@ -66,7 +66,8 @@ Follow these pictorial directions to assemble the set (model and directions prod
 - 1 [32x32 RGB LED Matrix](https://www.adafruit.com/product/607)
 - 1 [SmartMatrix SmartLED Shield](https://www.adafruit.com/product/1902)
 - 1 [Terminal connector](https://www.digikey.com/product-detail/en/te-connectivity-amp-connectors/1776293-1/A112765-ND/1649088)
-- 1 [M/F jumper wires](https://www.sparkfun.com/products/9139) (any supplier will do)
+- 1 [M/F jumper wires](https://www.sparkfun.com/products/9140) (any supplier will do)
+- 1 [12V 1A power supply for blue LEDs](https://www.adafruit.com/product/798)
 - 1 [5V 2A power supply for SmartMatrix](https://www.adafruit.com/product/276) (optional)
     - the SmartMatrix can be powered from the Raspberry Pi itself, however, the power draw is high enough that the Raspberry Pi may crash. The LED array will be brighter powering from a separate source as well.
 ### Directions
