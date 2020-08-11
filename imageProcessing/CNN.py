@@ -7,13 +7,9 @@ import cv2
 import h5py
 import numpy as np
 from kivy.logger import Logger
-# try:
-#     import tensorflow as tf
-#     from object_detection.utils import label_map_util
-#     from object_detection.utils import visualization_utils as vis_util
-# except ImportError:
-from tflite_runtime.interpreter import Interpreter
-from tflite_runtime.interpreter import load_delegate
+import tensorflow as tf
+from object_detection.utils import label_map_util
+from object_detection.utils import visualization_utils as vis_util
 
 
 class tfliteCNN:
@@ -25,6 +21,8 @@ class tfliteCNN:
                  on_edge_tpu=False,
                  model_path="neural_net/model.tflite",
                  video_resolution=(300, 300)):
+        from tensorflow.lite.python.interpreter import Interpreter
+        from tensorflow.lite.python.interpreter import load_delegate
         self.lock = threading.Lock()
         self.img_dir = img_dir
         self.save_worm_loc = save_worm_loc

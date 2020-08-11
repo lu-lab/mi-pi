@@ -134,44 +134,39 @@ class CameraSupport(threading.Thread):
     def video_only(self):
         Logger.info('Camera: Video capture only')
         # record a sequence of videos until the end of the experiment
-        with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
-            self.camera.start_recording(stream, format='h264', splitter_port=2)
-            try:
-                start_time = time.time()
-                Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_cam_event.is_set():
-                    self.camera.wait_recording(self.video_length, splitter_port=2)
-                    timestr = time.strftime("%Y%m%d_%H%M%S")
-                    videofile = "VID_{}.h264".format(timestr)
-                    videopath = join(self.video_save_dir, videofile)
-                    stream.copy_to(videopath)
-                    stream.clear()
-                    time.sleep(self.inter_video_interval)
-            except picamera.PiCameraError:
-                # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
-                Logger.info('Camera: PiCamera error, re-starting camera')
-                if self.camera is not None:
-                    self.camera.close()
-                # set resolution and fps
-                self.camera = picamera.PiCamera(resolution=self.resolution)
-                self.camera.framerate = int(float(self.fps))
-                self.video_only()
-            finally:
-                # wait a few seconds to make sure everything is wrapped up
-                time.sleep(5)
-                # stop recording gracefully
-                try:
-                    self.camera.stop_recording(splitter_port=2)
-                except picamera.PiCameraNotRecording:
-                    # the splitter port has already stopped recording
-                    pass
-                Logger.info('Camera: recording stopped')
-                self.stop_exp_event.set()
+        timer_stop_event = threading.Event()
+        videoTimer = CameraRepeatingTimer(self.video_length, self.inter_video_interval, self.end_time,
+                                          self.record_video, timer_stop_event)
+        videoTimer.start()
+        videoTimer.join()
+        Logger.debug('Camera: video timer thread joined')
+        self.stop_exp_event.set()
+        return
+
+    def record_video(self):
+        timestr = time.strftime("%Y%m%d_%H%M%S")
+        videofile = "VID_{}.h264".format(timestr)
+        videopath = join(self.video_save_dir, videofile)
+        try:
+            self.camera.start_recording(videopath, format='h264', splitter_port=2)
+            Logger.info('Camera: recording started, start time is: %s' % time.time())
+            self.camera.wait_recording(self.video_length, splitter_port=2)
+            self.camera.stop_recording(splitter_port=2)
+            Logger.debug('Camera: video recorded')
+        except picamera.PiCameraError:
+            # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
+            Logger.info('Camera: PiCamera error, re-starting camera')
+            if self.camera is not None:
+                self.camera.close()
+            # set resolution and fps
+            self.camera = picamera.PiCamera(resolution=self.resolution)
+            self.camera.framerate = int(float(self.fps))
 
     def video_and_webstream(self):
         Logger.info('Camera: Video and youtube livestream')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
+        # TODO capture to file instead of stream since no video processing
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
@@ -668,3 +663,46 @@ class CameraSupport(threading.Thread):
         cur_time = datetime.now()
         Logger.debug('Camera: current time is %s' % cur_time.strftime("%H:%M:%S %B %d, %Y"))
         return cur_time > self.end_time
+
+
+class CameraRepeatingTimer(threading.Thread):
+
+    def __init__(self, video_length, inter_video_interval, exp_end, function, stop_event):
+        super(CameraRepeatingTimer, self).__init__(name='t_timelapse')
+        self.start_time = datetime.now()
+        exp_length = exp_end - self.start_time
+        self.exp_length = (exp_length.seconds / 60) % 60
+        self.interval = video_length + inter_video_interval
+        Logger.debug('Camera Repeating Timer: interval is %d seconds' % self.interval)
+        Logger.debug('Camera Repeating Timer: experiment length is %d minutes' % self.exp_length)
+        self.function = function
+        self.stop_event = stop_event
+        self.args = {}
+        self.update_time_gen = self.update_time()
+        Logger.info('Camera Repeating Timer: initialized')
+
+    def run(self):
+        while True:
+            try:
+                while not self.stop_event.wait(next(self.update_time_gen) - time.time()):
+                    Logger.info('Camera Repeating Timer: update call is coming')
+                    try:
+                        t_update = threading.Thread(name='record_video', target=self.function, args=(self.args,))
+                        t_update.start()
+                    except OSError:
+                        Logger.debug('Camera Repeating Timer: cannot update this round, likely a memory problem')
+                    except MemoryError:
+                        Logger.debug('Camera Repeating Timer: cannot update this round, likely a memory problem')
+            except StopIteration:
+                Logger.info('Camera Repeating Timer: ending repeating timer')
+                self.stop()
+                return
+
+    def update_time(self):
+        i = 1
+        while i < math.ceil(self.exp_length * 60 / self.interval):
+            yield (self.start_time + i * self.interval)
+            i += 1
+
+    def stop(self):
+        self.stop_event.set()
