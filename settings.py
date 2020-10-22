@@ -74,6 +74,11 @@ expSettings_json = json.dumps([
 imagingSettings_json = json.dumps([
     {'type': 'title',
      'title': 'LED matrix'},
+    {'type': 'bool',
+     'title': 'Use teensy?',
+     'desc': 'are you using a teensy to control LEDs or temperature sensor?',
+     'section': 'LED matrix',
+     'key': 'use_teensy'},
     {'type': 'string',
      'title': 'LED color',
      'desc': 'as an 8-bit comma separated RGB triplet, i.e. 255, 0, 0 for red',
