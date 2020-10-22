@@ -43,6 +43,7 @@ class CameraSupport(threading.Thread):
         self.egg_count_list_lock = egg_count_list_lock
         self.end_time = end_time
         self.ledMatrix = ledMatrix
+        self.use_teensy = bool(int(config['LED matrix']['use_teensy']))
 
         self.fps = config['camera settings']['fps']
         self.resolution = config['camera settings']['resolution']
@@ -82,13 +83,16 @@ class CameraSupport(threading.Thread):
         self.camera.framerate = int(float(self.fps))
 
         # determine the difference in images taken under blue LEDs on vs. off.
-        self.image_processing_params['strel'] = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
-        self.mvmnt, self.led_difference = self.calibrate_brightness()
-        if self.led_difference > self.mvmnt:
-            self.max_difference = self.led_difference
+        if self.use_teensy:
+            self.image_processing_params['strel'] = cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5))
+            self.mvmnt, self.led_difference = self.calibrate_brightness()
+            if self.led_difference > self.mvmnt:
+                self.max_difference = self.led_difference
+            else:
+                width, height = self.camera.resolution
+                self.max_difference = (width * height) / 16
         else:
-            width, height = self.camera.resolution
-            self.max_difference = (width * height) / 16
+            self.max_difference = None
 
         Logger.info('Camera: video path %s' % self.video_save_dir)
         Logger.info('Camera: images path %s' % self.image_processing_params['img_dir'])
@@ -109,7 +113,7 @@ class CameraSupport(threading.Thread):
             elif self.webstream and self.image_processing_mode != 'None':
                 self.video_and_motion_and_webstream()
 
-        elif self.timelapse_option == 'linescan':
+        elif self.timelapse_option == 'linescan' and self.use_teensy:
             self.linescan_timelapse()
 
         elif self.timelapse_option == 'brightfield' or self.timelapse_option == 'darkfield':
@@ -404,8 +408,10 @@ class CameraSupport(threading.Thread):
         im_height = math.ceil(height / 16) * 16
 
         # make sure blue LEDs are off, take an image
-        self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
-        time.sleep(1)
+        if self.use_teensy:
+            self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
+            time.sleep(1)
+
         im1 = np.empty((im_height, im_width, 3), dtype=np.uint8)
         self.camera.capture(im1, format='bgr', splitter_port=3, use_video_port=True)
         # now resize the image again
@@ -421,15 +427,18 @@ class CameraSupport(threading.Thread):
         im2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
 
         # make sure blue LEDs are on, take an image
-        self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(1)}])
-        time.sleep(1)
+        if self.use_teensy:
+            self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(1)}])
+            time.sleep(1)
+
         im3 = np.empty((im_height, im_width, 3), dtype=np.uint8)
         self.camera.capture(im3, format='bgr', splitter_port=3, use_video_port=True)
         im3 = im3[:height, :width, :]
         im3 = cv2.cvtColor(im3, cv2.COLOR_BGR2GRAY)
 
         # turn the blue light back off.
-        self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
+        if self.use_teensy:
+            self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
 
         imgfile1 = join(self.image_processing_params['img_dir'], "calibrate_1.png")
         cv2.imwrite(imgfile1, im1)
@@ -478,7 +487,8 @@ class CameraSupport(threading.Thread):
         self.stop_exp_event.set()
 
     def timelapse(self):
-        self.ledMatrix.send_command([{'matrix_mode': self.timelapse_option}])
+        if self.use_teensy:
+            self.ledMatrix.send_command([{'matrix_mode': self.timelapse_option}])
 
         time.sleep(2)
         # set up for consistent imaging
