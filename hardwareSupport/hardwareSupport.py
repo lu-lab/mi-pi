@@ -18,12 +18,14 @@ class TeensyConfig(object):
                     Logger.debug("Teensy Config: Using serial port %s" % self.teensy_port)
         except IndexError:
             Logger.debug('Teensy Config: No serial connection found')
+            self.use_teensy = False
 
 
 class TempSensor(object):
 
     def __init__(self, config):
         self.port = config.teensy_port
+        #note to Lucinda: do GPIO stuff here
 
     def receive_serial(self, info):
         # read from serial port
@@ -53,6 +55,10 @@ class LEDMatrix(object):
 
     def __init__(self, config, color='255;0;0', radius=5, center=(16, 16), mode='darkfield', linescan_int=16, do_timelapse='None'):
         self.port = config.teensy_port
+        if self.port = None:
+            self.use_teensy = False
+        else:
+            self.use_teensy = True
         self.color = color
         self.radius = radius
         self.mode = mode
@@ -68,6 +74,10 @@ class LEDMatrix(object):
         self.send_command(init_commands)
 
     def send_command(self, mode_list):
+        if not self.use_teensy:
+            Logger.debug('LEDMatrix: tried to use LED without teensy')
+            exit()
+
         nline = '\n'
         # Logger.debug('LEDMatrix: matrix_mode is %s' % matrix_mode)
         with serial.Serial(self.port, baudrate=38400, timeout=0, writeTimeout=5) as ser:
