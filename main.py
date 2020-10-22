@@ -127,8 +127,10 @@ class Interface(BoxLayout):
     def stop_experiment(self, is_early):
         # finally, make sure to turn the blue LEDs off at the end of the experiment
         Logger.debug("Interface: updating with final parameters")
-        led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
-        self.experiment.ledMatrix.send_command(led_commands)
+        app = App.get_running_app()
+        if app.config.get('LED matrix', 'use_teensy'):
+            led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
+            self.experiment.ledMatrix.send_command(led_commands)
 
         # the experiment has ended in a regular way.
         if not is_early:
@@ -180,7 +182,6 @@ class Interface(BoxLayout):
         ManageLocalFiles.cleanup_files(join(src, 'images/'), join(dest, 'images/'), self.rclone_name)
 
         # reset folder names in .ini file for next experiment
-        app = App.get_running_app()
         app.config.set('experiment settings', 'local_exp_path', self.top_dir_local)
         app.config.set('experiment settings', 'remote_exp_path', self.top_dir_remote)
         app.config.write()
@@ -212,10 +213,12 @@ class Interface(BoxLayout):
         self.spreadsheet_id = app.config.get('experiment settings', 'google_spreadsheet_id')
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
+        self.use_teensy = app.config.get('LED matrix', 'use_teensy')
 
         # instantiate the ledMatrix
-        self.ledMatrix = LEDMatrix(self.teensy_config, color=self.LEDcolor, radius=self.matrix_radius,
-                                   mode='darkfield', center=self.led_center, do_timelapse=self.timelapse_option)
+        if self.use_teensy:
+            self.ledMatrix = LEDMatrix(self.teensy_config, color=self.LEDcolor, radius=self.matrix_radius,
+                                       mode='darkfield', center=self.led_center, do_timelapse=self.timelapse_option)
 
         res_string = app.config.get('main image processing', 'image_resolution')
         im_res = tuple(int(i) for i in res_string.split('x'))
@@ -283,8 +286,9 @@ class Interface(BoxLayout):
         if not os.path.exists(self.local_savepath):
             os.makedirs(self.local_savepath)
 
-        self.LEDcolor = self.LEDcolor.lstrip('[').rstrip(']')
-        self.LEDcolor = self.LEDcolor.replace(',', ';')
+        if self.use_teensy:
+            self.LEDcolor = self.LEDcolor.lstrip('[').rstrip(']')
+            self.LEDcolor = self.LEDcolor.replace(',', ';')
 
         # copy configuration to experiment folder
         file_to = '/'.join([self.local_savepath, basename(CONFIG_FILE)])
@@ -327,6 +331,7 @@ class KivycamApp(App):
         })
 
         config.setdefaults('LED matrix', {
+            'use_teensy': 0,
             'timelapse_options': 'None',
             'hc_image_frequency': 10,
             'ledcolor': '[255, 0, 0]',
