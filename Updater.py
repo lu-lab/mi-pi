@@ -20,6 +20,7 @@ class Updater(multiprocessing.Process):
         super(Updater, self).__init__()
         config = configparser.ConfigParser()
         config.read(config_file)
+        self.use_teensy = bool(int(config['LED matrix']['use_teensy']))
         self.ledMatrix = led_matrix
         self.tempSensor = temp_sensor
         self.sheet = sheet
@@ -115,7 +116,7 @@ class Updater(multiprocessing.Process):
             self.data['motion'] = self.motion_average
             self.data['opto_on'] = next_params['opto_on']
 
-        if self.timelapse_option == 'None':
+        if self.timelapse_option == 'None' and self.use_teensy:
             Logger.debug("Updater: updating with next parameters %s" % next_params)
             led_commands = [{'matrix_mode': 'opto', 'is_on': next_params['opto_on']},
                             {'matrix_mode': 'set_color', 'color': ';'.join(
