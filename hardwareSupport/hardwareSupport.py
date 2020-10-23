@@ -55,7 +55,7 @@ class LEDMatrix(object):
 
     def __init__(self, config, color='255;0;0', radius=5, center=(16, 16), mode='darkfield', linescan_int=16, do_timelapse='None'):
         self.port = config.teensy_port
-        if self.port = None:
+        if self.port == None:
             self.use_teensy = False
         else:
             self.use_teensy = True
