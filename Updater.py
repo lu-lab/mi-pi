@@ -125,10 +125,12 @@ class Updater(multiprocessing.Process):
                             {'matrix_mode': next_params['imaging_mode']}]
 
             self.ledMatrix.send_command(led_commands)
+            Logger.debug('LED Matrix: tried to send command Updater.py line 128')
             #
             if next_params['opto_on'] == '1':
                 led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
                 led_timer = threading.Timer(self.led_on_time, self.ledMatrix.send_command, args=[led_commands])
+                Logger.debug('LED Matrix: tried to send command Updater.py line 133')
                 led_timer.start()
                 Logger.info('Updater: LEDs cycled off')
 

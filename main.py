@@ -131,6 +131,7 @@ class Interface(BoxLayout):
         if app.config.get('LED matrix', 'use_teensy'):
             led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
             self.experiment.ledMatrix.send_command(led_commands)
+            Logger.debug('LED Matrix: tried to send command main.py line 134')
 
         # the experiment has ended in a regular way.
         if not is_early:

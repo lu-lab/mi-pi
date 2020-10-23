@@ -9,7 +9,6 @@ class TeensyConfig(object):
 
     def __init__(self):
         self.ports = list_ports.comports()
-        self.teensy_port = None
         try:
             for port in self.ports:
                 # TODO may not be working on all systems?
@@ -19,6 +18,7 @@ class TeensyConfig(object):
         except IndexError:
             Logger.debug('Teensy Config: No serial connection found')
             self.use_teensy = False
+            self.teensy_port = None
 
 
 class TempSensor(object):
@@ -71,7 +71,9 @@ class LEDMatrix(object):
                          {'matrix_mode': 'opto', 'is_on': '0'},
                          {'matrix_mode': 'set_radius', 'radius': str(self.radius)},
                          {'matrix_mode': self.mode}]
-        self.send_command(init_commands)
+        if self.use_teensy:
+            self.send_command(init_commands)
+            Logger.debug('LED Matrix: tried to send command hardwareSupport.py line 76')
 
     def send_command(self, mode_list):
         if not self.use_teensy:

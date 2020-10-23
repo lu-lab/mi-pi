@@ -410,6 +410,7 @@ class CameraSupport(threading.Thread):
         # make sure blue LEDs are off, take an image
         if self.use_teensy:
             self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
+            Logger.debug('LED matrix: line 413 pivy_camera.py send command called')
             time.sleep(1)
 
         im1 = np.empty((im_height, im_width, 3), dtype=np.uint8)
@@ -429,6 +430,7 @@ class CameraSupport(threading.Thread):
         # make sure blue LEDs are on, take an image
         if self.use_teensy:
             self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(1)}])
+            Logger.debug('LED matrix: line 433 pivy_camera.py send command called')
             time.sleep(1)
 
         im3 = np.empty((im_height, im_width, 3), dtype=np.uint8)
@@ -439,6 +441,7 @@ class CameraSupport(threading.Thread):
         # turn the blue light back off.
         if self.use_teensy:
             self.ledMatrix.send_command([{'matrix_mode': 'opto', 'is_on': str(0)}])
+            Logger.debug('LED matrix: line 444 pivy_camera.py send command called')
 
         imgfile1 = join(self.image_processing_params['img_dir'], "calibrate_1.png")
         cv2.imwrite(imgfile1, im1)
@@ -492,6 +495,7 @@ class CameraSupport(threading.Thread):
     def timelapse(self):
         if self.use_teensy:
             self.ledMatrix.send_command([{'matrix_mode': self.timelapse_option}])
+            Logger.debug('LED matrix: line 498 pivy_camera.py send command called')
 
         time.sleep(2)
         # set up for consistent imaging
