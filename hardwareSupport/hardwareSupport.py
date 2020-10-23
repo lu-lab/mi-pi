@@ -29,10 +29,16 @@ class TempSensor(object):
     def __init__(self, config):
         self.port = config.teensy_port
         #note to Lucinda: do GPIO stuff here
+        if config.teensy_port == None:
+            self.use_teensy = False
 
     def receive_serial(self, info):
         # read from serial port
         try:
+            if not self.use_teensy:
+                info = None
+                return info, False
+            # This is just dummy temp
             with serial.Serial(self.port, baudrate=38400, timeout=1, writeTimeout=5) as ser:
                 ser.flushInput()
                 ser.flushOutput()
