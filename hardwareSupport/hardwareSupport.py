@@ -76,7 +76,7 @@ class LEDMatrix(object):
     def send_command(self, mode_list):
         if not self.use_teensy:
             Logger.debug('LEDMatrix: tried to use LED without teensy')
-            exit()
+            return
 
         nline = '\n'
         # Logger.debug('LEDMatrix: matrix_mode is %s' % matrix_mode)

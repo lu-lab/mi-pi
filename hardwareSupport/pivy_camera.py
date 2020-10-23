@@ -454,6 +454,9 @@ class CameraSupport(threading.Thread):
         return mvmnt, LED_difference
 
     def linescan_timelapse(self):
+        if not self.use_teensy:
+            Logger.debug('Camera: tried to do linescan without teensy')
+            return
         ymax = self.ledMatrix.center_y + self.ledMatrix.radius
         ymin = self.ledMatrix.center_y - self.ledMatrix.radius
         Logger.debug('Camera: linescan ymin is %s, linescan ymax is %s' % (str(ymin), str(ymax)))
