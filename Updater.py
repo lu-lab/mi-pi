@@ -144,10 +144,16 @@ class Updater(multiprocessing.Process):
 
         try:
             # get temperature and humidity reading
-            self.data, success = self.tempSensor.receive_serial(self.data)
+            if use_teensy:
+                self.data, success = self.tempSensor.receive_serial(self.data)
+            else:
+                self.data, success = self.tempSensor.get_temperature_humidity(self.data)
             counter = 0
             while not success and counter <= 3:
-                self.data, success = self.tempSensor.receive_serial(self.data)
+                if use_teensy:
+                    self.data, success = self.tempSensor.receive_serial(self.data)
+                else:
+                    self.data, success = self.tempSensor.get_temperature_humidity(self.data)
                 counter +=1
 
             # write motion data, temp, and humidity to google sheet
