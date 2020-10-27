@@ -65,7 +65,7 @@ class TempSensor(object):
             except:
                 pass
         if i2c_address in locals():
-            Logger.info(f'i2c device address is {i2c_address}')
+            Logger.info('i2c device address is' + str(i2c_address) )
         else:
             Logger.debug('TempSensor: no i2c device found. check GPIO connections. You can run sudo i2cdetect -y 1 from the command line')
         return i2c_address
