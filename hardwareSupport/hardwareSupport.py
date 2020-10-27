@@ -3,6 +3,7 @@ import serial
 from serial.tools import list_ports
 from kivy.logger import Logger
 import time
+import smbus
 
 
 class TeensyConfig(object):
@@ -28,17 +29,13 @@ class TempSensor(object):
 
     def __init__(self, config):
         self.port = config.teensy_port
-        #note to Lucinda: do GPIO stuff here
         if config.teensy_port == None:
             self.use_teensy = False
+            self.temp_sensor_address = self.get_i2c_address()
 
     def receive_serial(self, info):
         # read from serial port
         try:
-            if not self.use_teensy:
-                info = None
-                return info, False
-            # This is just dummy temp
             with serial.Serial(self.port, baudrate=38400, timeout=1, writeTimeout=5) as ser:
                 ser.flushInput()
                 ser.flushOutput()
@@ -59,6 +56,39 @@ class TempSensor(object):
         except serial.serialutil.SerialException or IndexError:
             return info, False
 
+    def get_i2c_address(self):
+        self.bus = smbus.SMBus(1)
+        for device in range(128):
+            try:
+                self.bus.read_byte(device)
+                i2c_address = hex(device)
+            except:
+                pass
+        if i2c_address in locals():
+            Logger.info(f'i2c device address is {i2c_address}')
+        else:
+            Logger.debug('TempSensor: no i2c device found. check GPIO connections. You can run sudo i2cdetect -y 1 from the command line')
+        return i2c_address
+
+    def get_temperature_humidity(self):
+        #read from GPIO
+        read_temp_command = 0xE3
+        read_humidity_command = 0xE5
+        temp_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_temp_command, 2)
+        humidity_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_humidity_command, 2)
+
+        temp_celcius = self.bytes_to_C(temp_bytes)
+        humidity_percent = self.bytes_to_percent(humidity_bytes)
+
+        return temp_celcius, humidity_percent
+
+    def bytes_to_C(self, bytes):
+        word = (bytes[0] << 8) + bytes[1]
+        return (175.72*word/65536) - 46.85         # temp in celcius
+
+    def bytes_to_percent(self, bytes):
+        word = (bytes[0] << 8) + bytes[1]
+        return (125*word/65536) - 6        # humidity in percent
 
 class LEDMatrix(object):
 
