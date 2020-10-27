@@ -144,13 +144,13 @@ class Updater(multiprocessing.Process):
 
         try:
             # get temperature and humidity reading
-            if use_teensy:
+            if self.use_teensy:
                 self.data, success = self.tempSensor.receive_serial(self.data)
             else:
                 self.data, success = self.tempSensor.get_temperature_humidity(self.data)
             counter = 0
             while not success and counter <= 3:
-                if use_teensy:
+                if self.use_teensy:
                     self.data, success = self.tempSensor.receive_serial(self.data)
                 else:
                     self.data, success = self.tempSensor.get_temperature_humidity(self.data)
