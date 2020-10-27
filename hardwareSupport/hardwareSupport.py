@@ -78,9 +78,13 @@ class TempSensor(object):
             temp_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_temp_command, 2)
             humidity_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_humidity_command, 2)
 
-            info['temperature'] = self.bytes_to_C(temp_bytes)
-            info['humidity'] = self.bytes_to_percent(humidity_bytes)
+            temp_C = self.bytes_to_C(temp_bytes)
+            humidity_percent = self.bytes_to_percent(humidity_bytes)
+            info['temperature'] = temp_C
+            info['humidity'] = humidity_percent
 
+            Logger.debug('TempSensor: temp is ' + str(temp_C))
+            Logger.debug('TempSensor: humidity is ' + str(humidity_percent))
             return info, True
         except:
             return info, False
