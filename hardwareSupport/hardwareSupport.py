@@ -58,13 +58,14 @@ class TempSensor(object):
 
     def get_i2c_address(self):
         self.bus = smbus.SMBus(1)
+        self.i2c_address = None
         for device in range(128):
             try:
                 self.bus.read_byte(device)
                 i2c_address = hex(device)
             except:
                 pass
-        if i2c_address in locals():
+        if i2c_address is not None:
             Logger.info('i2c device address is' + str(i2c_address) )
         else:
             Logger.debug('TempSensor: no i2c device found. check GPIO connections. You can run sudo i2cdetect -y 1 from the command line')
