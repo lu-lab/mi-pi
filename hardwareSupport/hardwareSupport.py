@@ -70,17 +70,20 @@ class TempSensor(object):
             Logger.debug('TempSensor: no i2c device found. check GPIO connections. You can run sudo i2cdetect -y 1 from the command line')
         return i2c_address
 
-    def get_temperature_humidity(self):
+    def get_temperature_humidity(self, info):
         #read from GPIO
-        read_temp_command = 0xE3
-        read_humidity_command = 0xE5
-        temp_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_temp_command, 2)
-        humidity_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_humidity_command, 2)
+        try:
+            read_temp_command = 0xE3
+            read_humidity_command = 0xE5
+            temp_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_temp_command, 2)
+            humidity_bytes = self.bus.read_i2c_block_data(self.temp_sensor_address, read_humidity_command, 2)
 
-        temp_celcius = self.bytes_to_C(temp_bytes)
-        humidity_percent = self.bytes_to_percent(humidity_bytes)
+            info['temperature'] = self.bytes_to_C(temp_bytes)
+            info['humidity'] = self.bytes_to_percent(humidity_bytes)
 
-        return temp_celcius, humidity_percent
+            return info, True
+        except:
+            return info, False
 
     def bytes_to_C(self, bytes):
         word = (bytes[0] << 8) + bytes[1]
