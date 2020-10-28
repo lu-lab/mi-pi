@@ -21,6 +21,7 @@ class Updater(multiprocessing.Process):
         config = configparser.ConfigParser()
         config.read(config_file)
         self.use_teensy = bool(int(config['LED matrix']['use_teensy']))
+        Logger.debug('Updater: self.use_teensy is ' + str(self.use_teensy))
         self.ledMatrix = led_matrix
         self.tempSensor = temp_sensor
         self.sheet = sheet
@@ -146,14 +147,17 @@ class Updater(multiprocessing.Process):
             # get temperature and humidity reading
             if self.use_teensy:
                 self.data, success = self.tempSensor.receive_serial(self.data)
+                Logger.debug('trying to get temp from teensy 148')
             else:
                 self.data, success = self.tempSensor.get_temperature_humidity(self.data)
+                Logger.debug('trying to get temp from GPIO 151')
             counter = 0
             while not success and counter <= 3:
                 if self.use_teensy:
                     self.data, success = self.tempSensor.receive_serial(self.data)
                 else:
                     self.data, success = self.tempSensor.get_temperature_humidity(self.data)
+
                 counter +=1
 
             # write motion data, temp, and humidity to google sheet

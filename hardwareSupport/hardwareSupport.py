@@ -106,6 +106,7 @@ class LEDMatrix(object):
             self.use_teensy = False
         else:
             self.use_teensy = True
+            Logger.debug('LEDMatrix: setting use_teensy to true')
         self.color = color
         self.radius = radius
         self.mode = mode

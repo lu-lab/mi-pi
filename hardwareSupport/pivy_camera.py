@@ -44,7 +44,7 @@ class CameraSupport(threading.Thread):
         self.end_time = end_time
         self.ledMatrix = ledMatrix
         self.use_teensy = bool(int(config['LED matrix']['use_teensy']))
-
+        Logger.debug('pivy_camera thinks self.use_teensy is ' + str(self.use_teensy))
         self.fps = config['camera settings']['fps']
         self.resolution = config['camera settings']['resolution']
         self.gain = config['camera settings']['gain']

@@ -129,6 +129,7 @@ class Interface(BoxLayout):
         Logger.debug("Interface: updating with final parameters")
         app = App.get_running_app()
         if app.config.get('LED matrix', 'use_teensy'):
+            Logger.debug('shutting down with use_teensy = True')
             led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
             self.experiment.ledMatrix.send_command(led_commands)
             Logger.debug('LED Matrix: tried to send command main.py line 134')
@@ -215,6 +216,7 @@ class Interface(BoxLayout):
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
         self.use_teensy = app.config.get('LED matrix', 'use_teensy')
+        Logger.debug('main.py set_config function thinks self.use_teensy is ' + str(self.use_teensy))
 
         # instantiate the ledMatrix
         if self.use_teensy:
