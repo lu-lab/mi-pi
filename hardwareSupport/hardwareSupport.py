@@ -61,11 +61,11 @@ class TempSensor(object):
         for device in range(128):
             try:
                 self.bus.read_byte(device)
-                i2c_address = hex(device)
+                i2c_address = device
             except:
                 pass
         if i2c_address is not None:
-            Logger.info('i2c device address is' + str(i2c_address) )
+            Logger.info('i2c device address is' + str(i2c_address))
         else:
             Logger.debug('TempSensor: no i2c device found. check GPIO connections. You can run sudo i2cdetect -y 1 from the command line')
         return i2c_address
@@ -87,8 +87,10 @@ class TempSensor(object):
             Logger.debug('TempSensor: humidity is ' + str(humidity_percent))
             return info, True
         except:
-            return info, False
+            info['temperature'] = None
+            info['humidity'] = None
             Logger.debug('TempSensor: Failed to read')
+            return info, False
 
     def bytes_to_C(self, bytes):
         word = (bytes[0] << 8) + bytes[1]
