@@ -17,7 +17,7 @@ class TeensyConfig(object):
                 if port.manufacturer == 'Teensyduino':
                     self.teensy_port = port.device
                     Logger.debug("Teensy Config: Using serial port %s" % self.teensy_port)
-            if self.teensy is not None:
+            if self.teensy_port is None:
                 self.use_teensy = False
         except IndexError:
             Logger.debug('Teensy Config: No serial connection found')
