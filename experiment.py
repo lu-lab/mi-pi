@@ -53,9 +53,7 @@ class Experiment(threading.Thread):
         self.exp_end = self.exp_start + datetime.timedelta(minutes=interface.explength)
 
         # instantiate the temperature/humidity sensor objects
-        if interface.use_teensy:
-            self.tempSensor = TempSensor(interface.teensy_config)
-            # note to Lucinda: add GPIO here
+        self.tempSensor = TempSensor(interface.teensy_config)
 
         # use the process_manager created in the interface class to store a few lists
         self.motion_list = self.interface.process_manager.list()

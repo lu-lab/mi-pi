@@ -88,6 +88,7 @@ class TempSensor(object):
             return info, True
         except:
             return info, False
+            Logger.debug('TempSensor: Failed to read')
 
     def bytes_to_C(self, bytes):
         word = (bytes[0] << 8) + bytes[1]
