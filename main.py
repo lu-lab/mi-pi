@@ -127,8 +127,8 @@ class Interface(BoxLayout):
     def stop_experiment(self, is_early):
         # finally, make sure to turn the blue LEDs off at the end of the experiment
         Logger.debug("Interface: updating with final parameters")
+        Logger.debug('shutting down with use_teensy = ' + str(self.use_teensy))
         if self.use_teensy:
-            Logger.debug('shutting down with use_teensy = ' + str(self.use_teensy))
             led_commands = [{'matrix_mode': 'opto', 'is_on': str(0)}]
             self.experiment.ledMatrix.send_command(led_commands)
             Logger.debug('LED Matrix: tried to send command main.py line 134')
@@ -182,6 +182,7 @@ class Interface(BoxLayout):
         ManageLocalFiles.cleanup_files(join(src, 'videos/'), join(dest, 'videos/'), self.rclone_name)
         ManageLocalFiles.cleanup_files(join(src, 'images/'), join(dest, 'images/'), self.rclone_name)
 
+        app = App.get_running_app()
         # reset folder names in .ini file for next experiment
         app.config.set('experiment settings', 'local_exp_path', self.top_dir_local)
         app.config.set('experiment settings', 'remote_exp_path', self.top_dir_remote)
