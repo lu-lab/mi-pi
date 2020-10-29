@@ -214,7 +214,7 @@ class Interface(BoxLayout):
         self.spreadsheet_id = app.config.get('experiment settings', 'google_spreadsheet_id')
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
-        self.use_teensy = bool(app.config.getint('LED matrix', 'use_teensy'))
+        self.use_teensy = app.config.getboolean('LED matrix', 'use_teensy')
         Logger.debug('main.py set_config function thinks self.use_teensy is ' + str(self.use_teensy))
 
         # instantiate the ledMatrix
