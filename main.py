@@ -219,8 +219,12 @@ class Interface(BoxLayout):
 
         # instantiate the ledMatrix
         if self.use_teensy:
+            Logger.debug('Main.py line 222 self.use_teensy is ' + str(self.use_teensy))
             self.ledMatrix = LEDMatrix(self.teensy_config, color=self.LEDcolor, radius=self.matrix_radius,
                                        mode='darkfield', center=self.led_center, do_timelapse=self.timelapse_option)
+        else:
+            Logger.debug('Main.py line 226 self.use_teensy is ' + str(self.use_teensy))
+            self.ledMatrix = None
 
         res_string = app.config.get('main image processing', 'image_resolution')
         im_res = tuple(int(i) for i in res_string.split('x'))
