@@ -137,6 +137,9 @@ class CameraSupport(threading.Thread):
                     stream.copy_to(videopath)
                     stream.clear()
                     time.sleep(self.inter_video_interval)
+                    # check memory usage
+                    vmem = psutil.virtual_memory()
+                    Logger.debug('Memory usage is %s' % vmem.percent)
             except picamera.PiCameraError:
                 # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
                 Logger.info('Camera: PiCamera error, re-starting camera')

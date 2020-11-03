@@ -150,13 +150,20 @@ class Updater(multiprocessing.Process):
                 Logger.debug('trying to get temp from teensy 148')
             else:
                 self.data, success = self.tempSensor.get_temperature_humidity(self.data)
-                Logger.debug('trying to get temp from GPIO 151')
+                if success:
+                    Logger.debug('TempSensor: Got temp from GPIO')
+                else:
+                    Logger.debug('TempSensor: failed to get temp from GPIO')
             counter = 0
             while not success and counter <= 3:
                 if self.use_teensy:
                     self.data, success = self.tempSensor.receive_serial(self.data)
                 else:
                     self.data, success = self.tempSensor.get_temperature_humidity(self.data)
+                    if success:
+                        Logger.debug('TempSensor: Got temp from GPIO')
+                    else:
+                        Logger.debug('TempSensor: failed to get temp from GPIO, trying again')
 
                 counter +=1
 
@@ -221,6 +228,11 @@ class Updater(multiprocessing.Process):
             Logger.debug('Updater: Cannot upload videos to remote')
         except TimeoutExpired:
             p.kill()
+            Logger.debug('Updater: video upload to remote had TimeoutExpired error')
+        except Exception as ex:
+            Logger.debug(ex)
+            raise Exception("Hi")
+
         ManageLocalFiles.cleanup_files(source, join(self.remote_savepath, 'videos'), self.rclone_name)
 
         # upload image folder
