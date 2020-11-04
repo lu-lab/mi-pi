@@ -223,7 +223,7 @@ class Updater(multiprocessing.Process):
         Logger.debug('Upload: Destination folder %s' % dest)
         try:
             p = Popen(["rclone", "copy", source, dest])
-            p.wait(timeout=50)
+            p.wait(timeout=90)
         except OSError:
             Logger.debug('Updater: Cannot upload videos to remote')
         except TimeoutExpired:
