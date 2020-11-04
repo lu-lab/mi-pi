@@ -121,111 +121,121 @@ class CameraSupport(threading.Thread):
 
         return
 
+    def filename_gen(self):
+        while not self.is_exp_done() and not self.stop_cam_event.is_set():
+            videofile = "VID_{}.h264".format(time.strftime("%Y%m%d_%H%M%S"))
+            videopath = join(self.video_save_dir, videofile)
+            yield videopath
+
     def video_only(self):
         Logger.info('Camera: Video capture only')
         # record a sequence of videos until the end of the experiment
-        with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
-            self.camera.start_recording(stream, format='h264', splitter_port=2)
+        file_gen = self.filename_gen()
+        if self.inter_video_interval == 0:
+            # continuous recording
             try:
-                start_time = time.time()
-                Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_cam_event.is_set():
+                for filename in self.camera.record_sequence(file_gen, splitter_port=2):
+                    Logger.info('Camera: recording started, start time is: %s' % time.time())
                     self.camera.wait_recording(self.video_length, splitter_port=2)
-                    timestr = time.strftime("%Y%m%d_%H%M%S")
-                    videofile = "VID_{}.h264".format(timestr)
-                    videopath = join(self.video_save_dir, videofile)
-                    stream.copy_to(videopath)
-                    stream.clear()
-                    time.sleep(self.inter_video_interval)
-                    # check memory usage
                     vmem = psutil.virtual_memory()
                     Logger.debug('Memory usage is %s' % vmem.percent)
-            except picamera.PiCameraError:
-                # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
-                Logger.info('Camera: PiCamera error, re-starting camera')
-                if self.camera is not None:
-                    self.camera.close()
-                # set resolution and fps
-                self.camera = picamera.PiCamera(resolution=self.resolution)
-                self.camera.framerate = int(float(self.fps))
-                self.video_only()
-            finally:
-                # wait a few seconds to make sure everything is wrapped up
-                time.sleep(5)
-                # stop recording gracefully
+            except StopIteration:
+                pass
+        else:
+            # intermittent recording
+            with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
+                self.camera.start_recording(stream, format='h264', splitter_port=2)
                 try:
-                    self.camera.stop_recording(splitter_port=2)
-                except picamera.PiCameraNotRecording:
-                    # the splitter port has already stopped recording
-                    pass
-                Logger.info('Camera: recording stopped')
-                self.stop_exp_event.set()
+                    Logger.info('Camera: recording started, start time is: %s' % time.time())
+                    while not self.is_exp_done() and not self.stop_cam_event.is_set():
+                        self.camera.wait_recording(self.video_length, splitter_port=2)
+                        try:
+                            stream.copy_to(next(file_gen))
+                        except StopIteration:
+                            pass
+                        finally:
+                            stream.clear()
+                            time.sleep(self.inter_video_interval)
+                            vmem = psutil.virtual_memory()
+                            Logger.debug('Memory usage is %s' % vmem.percent)
+
+                except picamera.PiCameraError:
+                    # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
+                    Logger.info('Camera: PiCamera error, re-starting camera')
+                    if self.camera is not None:
+                        self.camera.close()
+                    # set resolution and fps
+                    self.camera = picamera.PiCamera(resolution=self.resolution)
+                    self.camera.framerate = int(float(self.fps))
+                    self.video_only()
+                finally:
+                    # wait a few seconds to make sure everything is wrapped up
+                    time.sleep(5)
+                    # stop recording gracefully
+                    try:
+                        self.camera.stop_recording(splitter_port=2)
+                    except picamera.PiCameraNotRecording:
+                        # the camera is already closed, and that's fine
+                        pass
+                    Logger.info('Camera: recording stopped')
+                    self.stop_exp_event.set()
 
     def video_and_webstream(self):
         Logger.info('Camera: Video and youtube livestream')
         stream_cmd = build_stream_command(self.fps, self.youtube_link, self.youtube_key)
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
-        with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
-            self.camera.start_recording(stream, format='h264', splitter_port=2)
+        file_gen = self.filename_gen()
+        try:
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
+            for filename in self.camera.record_sequence(file_gen, splitter_port=2):
+                Logger.info('Camera: recording started, start time is: %s' % time.time())
+                self.camera.wait_recording(self.video_length, splitter_port=2)
+                self.camera.wait_recording(self.video_length, splitter_port=3)
+                # TODO not 100% sure whether this time.sleep will work with the record sequence command.
+                time.sleep(self.inter_video_interval)
+        except StopIteration:
+            pass
+        except picamera.PiCameraNotRecording:
+            pass
+        except BrokenPipeError:
+            Logger.warning('Streaming: Your youtube link or youtube key is likely invalid')
+            self.camera.stop_recording(splitter_port=3)
+        except picamera.PiCameraError:
+            # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
+            Logger.info('Camera: PiCamera error, re-starting camera')
+            if self.camera is not None:
+                self.camera.close()
+            # set resolution and fps
+            self.camera = picamera.PiCamera(resolution=self.resolution)
+            self.camera.framerate = int(float(self.fps))
+            self.video_and_webstream()
+        finally:
+            # wait a few seconds to make sure everything is wrapped up
+            time.sleep(5)
+            # stop recording gracefully
             try:
-                start_time = time.time()
-                Logger.info('Camera: recording started, start time is: %s' % start_time)
-                while not self.is_exp_done() and not self.stop_cam_event.is_set():
-                    self.camera.wait_recording(self.video_length, splitter_port=2)
-                    # if there's an issue with the stream and it closes,
-                    # just ignore it and continue recording to disk
-                    try:
-                        self.camera.wait_recording(self.video_length, splitter_port=3)
-                    except picamera.PiCameraNotRecording:
-                        pass
-                    timestr = time.strftime("%Y%m%d_%H%M%S")
-                    videofile = "VID_{}.h264".format(timestr)
-                    videopath = join(self.video_save_dir, videofile)
-                    stream.copy_to(videopath)
-                    stream.clear()
-                    time.sleep(self.inter_video_interval)
-
-            except BrokenPipeError:
-                Logger.warning('Streaming: Your youtube link or youtube key is likely invalid')
                 self.camera.stop_recording(splitter_port=3)
-            except picamera.PiCameraError:
-                # if for whatever reason the picamera has some sort of error, close the camera and restart the function!
-                Logger.info('Camera: PiCamera error, re-starting camera')
-                if self.camera is not None:
-                    self.camera.close()
-                # set resolution and fps
-                self.camera = picamera.PiCamera(resolution=self.resolution)
-                self.camera.framerate = int(float(self.fps))
-                self.video_and_webstream()
-            finally:
-                # wait a few seconds to make sure everything is wrapped up
-                time.sleep(5)
-                # stop recording gracefully
-                try:
-                    self.camera.stop_recording(splitter_port=2)
-                    self.camera.stop_recording(splitter_port=3)
-                except picamera.PiCameraNotRecording:
-                    # the camera is already closed, and that's fine
-                    pass
-                stream_pipe.stdin.close()
-                try:
-                    stream_pipe.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    stream_pipe.kill()
-                Logger.info('Camera: recording stopped')
-                self.stop_exp_event.set()
+            except picamera.PiCameraNotRecording:
+                # the camera is already closed, and that's fine
+                pass
+            stream_pipe.stdin.close()
+            try:
+                stream_pipe.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                stream_pipe.kill()
+            Logger.info('Camera: recording stopped')
+            self.stop_exp_event.set()
 
     def video_and_motion(self):
         Logger.info('Camera: video and local motion detection')
         cur_image = CurrentImage(self.image_processing_params)
         self.img_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock,
                                       self.egg_count_list, self.egg_count_list_lock)
+        file_gen = self.filename_gen()
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             try:
-                start_time = time.time()
-                Logger.info('Camera: recording started, start time is: %s' % start_time)
+                Logger.info('Camera: recording started, start time is: %s' % time.time())
                 self.camera.capture(self.img_pool, format='bgr', splitter_port=3,
                                     resize=self.image_processing_params['image_resolution'],
                                     use_video_port=True)
@@ -258,9 +268,8 @@ class CameraSupport(threading.Thread):
                             vmem = psutil.virtual_memory()
                             Logger.debug('Memory usage is %s' % vmem.percent)
                             t_image = 0
-                    timestr = time.strftime("%Y%m%d_%H%M%S")
-                    videofile = "VID_{}.h264".format(timestr)
-                    videopath = join(self.video_save_dir, videofile)
+
+                    videopath = next(file_gen)
                     stream.copy_to(videopath)
                     stream.clear()
                     Logger.debug('Camera: video %s collected' % videopath)
@@ -315,12 +324,12 @@ class CameraSupport(threading.Thread):
         stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
         cur_image = CurrentImage(self.image_processing_params)
         self.img_pool = ProcessorPool(3, cur_image, self.motion_list, self.motion_list_lock, self.egg_count_list, self.egg_count_list_lock)
+        file_gen = self.filename_gen()
         with picamera.PiCameraCircularIO(self.camera, seconds=self.video_length, splitter_port=2) as stream:
             self.camera.start_recording(stream, format='h264', splitter_port=2)
             self.camera.start_recording(stream_pipe.stdin, format='h264', bitrate=2000000, splitter_port=3)
             try:
-                start_time = time.time()
-                Logger.info('Camera: recording started, start time is: %s' % start_time)
+                Logger.info('Camera: recording started, start time is: %s' % time.time())
                 self.camera.capture(self.img_pool, format='bgr', splitter_port=0,
                                     resize=self.image_processing_params['image_resolution'],
                                     use_video_port=True)
@@ -348,9 +357,7 @@ class CameraSupport(threading.Thread):
                             t_image = 0
                         t_video += 1
                         t_image += 1
-                    timestr = time.strftime("%Y%m%d_%H%M%S")
-                    videofile = "VID_{}.h264".format(timestr)
-                    videopath = join(self.video_save_dir, videofile)
+                    videopath = next(file_gen)
                     stream.copy_to(videopath)
                     stream.clear()
                     t_inter_video = 0
