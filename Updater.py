@@ -221,9 +221,10 @@ class Updater(multiprocessing.Process):
         dest = ':'.join([self.rclone_name, join(self.remote_savepath, 'videos/')])
         Logger.debug('Upload: Source folder %s' % source)
         Logger.debug('Upload: Destination folder %s' % dest)
+        timeout_length = self.sheet.time_res - 10
         try:
             p = Popen(["rclone", "copy", source, dest])
-            p.wait(timeout=90)
+            p.wait(timeout=timeout_length)
         except OSError:
             Logger.debug('Updater: Cannot upload videos to remote')
         except TimeoutExpired:
@@ -242,7 +243,7 @@ class Updater(multiprocessing.Process):
         Logger.debug('Upload: Destination folder %s' % dest)
         try:
             p = Popen(["rclone", "copy", source, dest])
-            p.wait(timeout=50)
+            p.wait(timeout=timeout_length)
         except OSError:
             Logger.debug('Updater: Cannot upload images to remote')
         except TimeoutExpired:
