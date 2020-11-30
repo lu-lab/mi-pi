@@ -8,10 +8,16 @@ import time
 
 from statistics import mean
 from os.path import join
-from imageProcessing.CNN import CNN
 
 import picamera
 import picamera.array
+
+# import CNN stuff only if using neural net (to not import tensorflow unless necessary)
+from kivy.app import App
+app = App.get_running_app()
+image_processing_mode = app.config.get('main image processing', 'image_processing_mode')
+if image_processing_mode == 'neural net':
+    from imageProcessing.CNN import CNN
 
 
 def get_image_mask(img, imaging_parameters):
