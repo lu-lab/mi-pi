@@ -216,7 +216,6 @@ class Interface(BoxLayout):
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
         self.use_teensy = app.config.getboolean('LED matrix', 'use_teensy')
-        Logger.debug('main.py set_config function thinks self.use_teensy is ' + str(self.use_teensy))
 
         # instantiate the ledMatrix
         if self.use_teensy:
@@ -300,7 +299,12 @@ class Interface(BoxLayout):
         # copy configuration to experiment folder
         file_to = '/'.join([self.local_savepath, basename(CONFIG_FILE)])
         copyfile(CONFIG_FILE, file_to)
-
+        # upload config file to experiment folder
+        p = Popen(["rclone", "copyto", file_to, ':'.join([self.rclone_name, self.remote_savepath])])
+        try:
+            p.wait(timeout=5)
+        except TimeoutExpired:
+            p.kill()
 
 class KivycamApp(App):
 
