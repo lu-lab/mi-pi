@@ -11,7 +11,6 @@ import cv2
 import numpy as np
 import math
 
-from imageProcessing.image_processing import ProcessorPool, CurrentImage, delta_movement
 
 try:
     import picamera
@@ -62,6 +61,11 @@ class CameraSupport(threading.Thread):
             new_width = 1024
             new_height = int((new_width / width) * height)
             self.image_processing_params['image_resolution'] = new_width, new_height
+            # only import image processing if using neural net
+            from imageProcessing.image_processing import ProcessorPool, CurrentImage, delta_movement
+            Logger.debug('pivy_camera is importing image processing')
+        else:
+            Logger.debug('pivy_camera did not import image processing')
         self.image_processing_params['nn_count_eggs'] = bool(int(config['neural net']['nn_count_eggs']))
         self.img_pool = None
 
