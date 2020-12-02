@@ -5,7 +5,6 @@ from os.path import join, exists
 import cv2
 import h5py
 import numpy as np
-import tensorflow as tf
 from kivy.logger import Logger
 
 from object_detection.utils import label_map_util
@@ -18,6 +17,7 @@ class CNN:
      bounding-box for the highest-scoring worm object (class 1 in the provided frozen inference graph). '''
 
     def __init__(self, save_processed_images, img_dir, img_dims):
+        import tensorflow as tf
         self.lock = threading.Lock()
         self.box_file_lock = threading.Lock()
         self.save_processed_images = save_processed_images
@@ -26,7 +26,7 @@ class CNN:
             self.h5_file = join(self.img_dir, 'processed', 'data.h5')
         self.width, self.height = img_dims
         self.cwd = os.getcwd()
-        self.graph, self.sess, self.category_index = self.load_graph()
+        self5.graph, self.sess, self.category_index = self.load_graph()
         Logger.info('CNN: tensorflow model loaded')
 
     def load_graph(self):
