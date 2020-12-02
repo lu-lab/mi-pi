@@ -303,8 +303,10 @@ class Interface(BoxLayout):
         p = Popen(["rclone", "copyto", file_to, ':'.join([self.rclone_name, self.remote_savepath])])
         try:
             p.wait(timeout=5)
+            Logger.debug('trying to upload config file at beginning')
         except TimeoutExpired:
             p.kill()
+            Logger.debug('config file upload failed with timeout error')
 
 class KivycamApp(App):
 
