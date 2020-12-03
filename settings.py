@@ -132,7 +132,7 @@ imagingSettings_json = json.dumps([
      'desc': 'pixel w x h',
      'section': 'camera settings',
      'key': 'resolution',
-     'options': ['3280x2464', '1640x1232', '1640x922']},
+     'options': ['4056x3040','3280x2464', '1640x1232', '1640x922']},
     {'type': 'numeric',
      'title': 'Video length',
      'desc': 'length of individual videos',
