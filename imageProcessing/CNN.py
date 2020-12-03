@@ -9,7 +9,8 @@ from kivy.logger import Logger
 
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
-import importlib
+
+import tensorflow as tf
 
 class CNN:
     ''' The CNN class loads a frozen tensorflow inference graph for object detection. The internal '_run' method runs
@@ -17,7 +18,6 @@ class CNN:
      bounding-box for the highest-scoring worm object (class 1 in the provided frozen inference graph). '''
 
     def __init__(self, save_processed_images, img_dir, img_dims):
-        self.tf = importlib.import_module('tensorflow')
         self.lock = threading.Lock()
         self.box_file_lock = threading.Lock()
         self.save_processed_images = save_processed_images

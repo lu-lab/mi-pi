@@ -12,7 +12,7 @@ from os.path import join
 import picamera
 import picamera.array
 
-from imageProcessing.CNN import CNN
+import importlib
 
 
 def get_image_mask(img, imaging_parameters):
@@ -204,6 +204,10 @@ class ImageProcessor(threading.Thread):
         self.terminated = False
         self.stream = io.BytesIO()
         self.owner = owner
+        if self.owner.cur_image.image_processing_mode == 'neural net':
+            # self.imageProcessing = importlib.import_module('imageProcessing')
+            # self.CNN = getattr(self.imageProcessing, 'CNN')
+            from imageProcessing import CNN
         self.start()
 
     def run(self):
