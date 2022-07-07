@@ -62,19 +62,12 @@ class Experiment(threading.Thread):
         self.egg_count_list_lock = self.interface.process_manager.Lock()
 
         # instantiate the camera object
-        self.piCam = CameraSupport(interface._camera._camera,
-                                   interface.config_file,
-                                   interface.imaging_params,
-                                   interface.timelapse_option,
-                                   self.ledMatrix,
-                                   interface.stop_event,
-                                   interface.stop_cam,
-                                   interface.video_length,
-                                   self.exp_end,
-                                   self.motion_list,
-                                   self.motion_list_lock,
-                                   self.egg_count_list,
-                                   self.egg_count_list_lock)
+        self.piCam = CameraSupport(interface._camera._camera, interface.config_file, self.interface.imaging_params,
+                                   self.interface.timelapse_option, self.ledMatrix,
+                                   self.interface.stop_event, self.interface.stop_cam,
+                                   self.interface.video_length, self.exp_end,
+                                   self.motion_list, self.motion_list_lock,
+                                   self.egg_count_list, self.egg_count_list_lock)
 
         # instantiate the updater process
         self.update_process = Updater.Updater(interface.config_file, self.ledMatrix, self.tempSensor,

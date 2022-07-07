@@ -4,7 +4,7 @@ First we'll set up the physical aspects of the system, and put the operating sys
 
 ## Build the Lego set
 ### Supplies
-- Legos are listed [here](enclosure%20lego%20parts.csv). This list can be uploaded to [BrickLink](https://www.bricklink.com/v2/main.page) as a ['Wanted List'](https://www.bricklink.com/help.asp?helpID=1) that you can easily buy. 
+- Legos are listed [here](/docs/enclosure_lego_parts.csv). This list can be uploaded to [BrickLink](https://www.bricklink.com/v2/main.page) as a ['Wanted List'](https://www.bricklink.com/help.asp?helpID=1) that you can easily buy. 
 ### Directions
 The assembled set will look like the following:
 ![Lego single setup](/docs/assembly%20images/enclosure_v2.png)  
@@ -57,7 +57,7 @@ Follow these pictorial directions to assemble the set (model and directions prod
 11. Screw the wire into place.
 12. Take 4 differently colored jumper wires and attach the female ends to the headers soldered to the LED driver. The board is marked with the symbols V+ and V- (to power the LEDs), and D+ and D- (to control whether the LEDs are on or off). I strongly recommend using black and red jumper wires for the V- and V+ headers. Pictured below is the LED driver with black connected to V-, red connected to V+, yellow connected to ... and green connected to ...
 13. Using wire cutters, cut close to the male end of the black and red wires and then strip ~0.25 inch of the insulation off using your wire stripper. Twist the strands of the wire together. Grab your power jack to screw terminal block and screw the stripped red wire into the side marked (+) and the stripped black wire into the side marked (-). If you have any exposed wire, use electrical tape or heat-shrink tubing to cover it. 
-14. Now grab your temperature and humidity sensor and attach 4 differently colored jumper wires to the headers we soldered on earlier. Again, black jumper should go to GND and red jumper should go to PWR. In the picture below, green goes to () and yellow goes to (). 
+14. Now grab your temperature and humidity sensor and attach 4 differently colored jumper wires to the headers we soldered on earlier. Again, black jumper should go to GND and red jumper should go to PWR. In the picture below, green goes to (CL) and yellow goes to (DA). 
 15. Set the LED strip and the temperature sensor aside for now - we will attach them to the microcontroller at the end of the next step. ![humidity and temperature sensor with jumper wires](/docs/assembly%20images/IMG_20190504_150804.jpg)
 ## Set-up the LED matrix
 ### Supplies
@@ -66,7 +66,8 @@ Follow these pictorial directions to assemble the set (model and directions prod
 - 1 [32x32 RGB LED Matrix](https://www.adafruit.com/product/607)
 - 1 [SmartMatrix SmartLED Shield](https://www.adafruit.com/product/1902)
 - 1 [Terminal connector](https://www.digikey.com/product-detail/en/te-connectivity-amp-connectors/1776293-1/A112765-ND/1649088)
-- 1 [M/F jumper wires](https://www.sparkfun.com/products/9139) (any supplier will do)
+- 1 [M/F jumper wires](https://www.sparkfun.com/products/9140) (any supplier will do)
+- 1 [12V 1A power supply for blue LEDs](https://www.adafruit.com/product/798)
 - 1 [5V 2A power supply for SmartMatrix](https://www.adafruit.com/product/276) (optional)
     - the SmartMatrix can be powered from the Raspberry Pi itself, however, the power draw is high enough that the Raspberry Pi may crash. The LED array will be brighter powering from a separate source as well.
 ### Directions
@@ -78,7 +79,7 @@ Follow these pictorial directions to assemble the set (model and directions prod
 4. Install necessary libraries in your Arduino software
     1. Import the SmartMatrix library, as described in Arduino's documentation [here](https://www.arduino.cc/en/Guide/Libraries)
     2. Similarly, import the SparkFun_Si7021_Breakout_Library
-5. Upload [control script](teensy_control.ino) to the Teensy
+5. Upload [control script](mipi_teensy_sketch.ino) to the Teensy
 #### Attach Teensy to LED Matrix
 Additional details here: http://docs.pixelmatix.com/SmartMatrix/shield-v4.html
 #### Attach blue LED string and temperature and humidity sensor to Teensy

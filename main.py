@@ -1,6 +1,23 @@
 '''
 Interface for mi-pi
 '''
+
+from kivy.app import App
+from kivy.clock import mainthread
+from kivy.logger import Logger
+from kivy.properties import StringProperty, BooleanProperty,\
+     NumericProperty, DictProperty, ReferenceListProperty
+from kivy.uix.settings import SettingsWithSidebar
+from kivy.uix.boxlayout import BoxLayout
+
+from settings import expSettings_json, imagingSettings_json, \
+    pressureSettings_json, imageProcessingSettings_json
+from fileTransfer import ManageLocalFiles
+from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
+    CURDIR, CONFIG_FILE, LOG_DIR
+from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
+import experiment
+
 import os
 from os.path import join, basename, exists
 from os import makedirs
@@ -13,25 +30,6 @@ import multiprocessing
 from shutil import copyfile
 import logging
 from subprocess import Popen, TimeoutExpired
-
-from kivy.app import App
-from kivy.clock import mainthread
-from kivy.logger import Logger
-from kivy.properties import StringProperty, BooleanProperty,\
-     NumericProperty, DictProperty, ReferenceListProperty, ListProperty
-from kivy.uix.settings import SettingsWithSidebar
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.camera import Camera
-from kivy.graphics import Line, Point, InstructionGroup
-
-from settings import expSettings_json, imagingSettings_json, \
-    pressureSettings_json, imageProcessingSettings_json
-from fileTransfer import ManageLocalFiles
-from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
-    CURDIR, CONFIG_FILE, LOG_DIR
-from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
-from imageProcessing.image_processing import get_mask_from_annotation
-import experiment
 
 Logger.setLevel(logging.DEBUG)
 
@@ -53,8 +51,6 @@ class Interface(BoxLayout):
         super(Interface, self).__init__(**kwargs)
         self.ids.capture_button.disabled = True
         self.ids.start_button.disabled = True
-        self.ids.annotate_button.disabled = True
-        self.ids.clear_annotation_button.disabled = True
         self.paired_system_id = None
         self._camera = self.ids.camera._camera
         self.config_file = CONFIG_FILE
@@ -89,12 +85,11 @@ class Interface(BoxLayout):
             self.start_experiment()
 
     def start_experiment(self):
-        camera = self.ids['camera']
-        self.imaging_params['annotation'] = camera.annotation_interior
         self.exp_text = 'Experimenting!'
         self.exp_image_source = 'icons/experiment_started.png'
         Logger.info('Interface: Experiment started')
         self.is_exp_running = not self.is_exp_running
+        camera = self.ids['camera']
         camera.play = False
         self.set_config()
         threading.Thread(target=self.check_stop).start()
@@ -211,6 +206,7 @@ class Interface(BoxLayout):
         self.timelapse_option = app.config.get('LED matrix', 'timelapse_options')
         Logger.debug('Interface: timelapse option is %s' % str(self.timelapse_option))
         self.hc_image_frequency = app.config.getint('LED matrix', 'hc_image_frequency')
+        self.LEDmode = app.config.get('LED matrix', 'ledmode')
         self.LEDcolor = app.config.get('LED matrix', 'ledcolor')
         self.matrix_radius = app.config.getint('LED matrix', 'matrixradius')
         self.led_center = (app.config.getint('LED matrix', 'ledx'), app.config.getint('LED matrix', 'ledy'))
@@ -220,7 +216,7 @@ class Interface(BoxLayout):
 
         # instantiate the ledMatrix
         self.ledMatrix = LEDMatrix(self.teensy_config, color=self.LEDcolor, radius=self.matrix_radius,
-                                   mode='darkfield', center=self.led_center, do_timelapse=self.timelapse_option)
+                                   mode=self.LEDmode, center=self.led_center, do_timelapse=self.timelapse_option)
 
         res_string = app.config.get('main image processing', 'image_resolution')
         im_res = tuple(int(i) for i in res_string.split('x'))
@@ -294,76 +290,6 @@ class Interface(BoxLayout):
         # copy configuration to experiment folder
         file_to = '/'.join([self.local_savepath, basename(CONFIG_FILE)])
         copyfile(CONFIG_FILE, file_to)
-
-
-class MyCamera(Camera):
-    annotate_state = StringProperty('none')
-    draw_obj = []
-    line_points = ListProperty()
-    # a list of pixels describing the interior of a shape that the user has annotated
-    annotation_interior = ListProperty()
-
-    def build(self):
-        self.clear_widgets()
-        texture = self.texture
-        if not texture:
-            return
-
-    def annotate(self):
-        if self.annotate_state == 'annotated':
-            Logger.debug('CameraDisplay: computing mask')
-            self.get_mask()
-            self.annotate_state = 'none'
-        elif self.annotate_state == 'none':
-            self.annotate_state = 'annotating'
-
-    def get_mask(self):
-        # if there are points in the line, attempt to flood fill
-        # to get a mask and display the mask over the video input
-        try:
-            width, height = self.resolution
-            self.annotation_interior = get_mask_from_annotation(self.line_points, width, height)
-            with self.canvas:
-                # points in form [x1, y1, x2, y2]
-                Point(points=self.annotation_interior)
-        except IndexError:
-            Logger.debug('CameraDisplay: No annotation to get mask for')
-
-    def on_touch_down(self, touch):
-        if self.annotate_state == 'annotating':
-            Logger.debug('CameraDisplay: touch down')
-            with self.canvas:
-                touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
-
-    def on_touch_up(self, touch):
-        if self.annotate_state == 'annotating':
-            Logger.debug('CameraDisplay: touch up')
-            if "line" in touch.ud:
-                obj = InstructionGroup()
-                obj.add(touch.ud["line"])
-                self.draw_obj.append(obj)
-                self.line_points = touch.ud["line"].points
-                Logger.debug('CameraDisplay: line added')
-                self.annotate_state = 'annotated'
-
-    def on_touch_move(self, touch):
-        if self.annotate_state == 'annotating':
-            Logger.debug('CameraDisplay: touch move')
-            if "line" in touch.ud:
-                touch.ud["line"].points += [touch.x, touch.y]
-            else:
-                with self.canvas:
-                    touch.ud["line"] = Line(points=(touch.x, touch.y), close=True)
-
-    def clear(self):
-        try:
-            for item in self.draw_obj:
-                print(item)
-                self.canvas.remove(item)
-            self.line_points = []
-            Logger.debug('CameraDisplay: annotation cleared')
-        except IndexError:
-            Logger.debug('CameraDisplay: No annotation to clear')
 
 
 class KivycamApp(App):
@@ -444,9 +370,8 @@ class KivycamApp(App):
         })
 
         config.setdefaults('neural net', {
-            'neural_net_type': 'Faster R-CNN',
             'nn_count_eggs': 0,
-            'nn_distance_thresh': 10,
+            'nn_distance_thresh': 10
         })
 
         config.setdefaults('image delta', {

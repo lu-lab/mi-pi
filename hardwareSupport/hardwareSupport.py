@@ -126,5 +126,17 @@ class LEDMatrix(object):
                     msg = ';'.join([mode['matrix_mode'], str(self.linescan_int), nline])
                     ser.write(msg.encode())
                     Logger.debug('LEDMatrix: msg is %s' % msg)
+                elif mode['matrix_mode'] == 'RGB pie':
+                    msg = ';'.join([mode['matrix_mode']])
+                    ser.write(msg.encode())
+                    Logger.debug('LEDMatrix: msg is %s' % msg)
+                elif mode['matrix_mode'] == 'RGB dots':
+                    msg = ';'.join([mode['matrix_mode']])
+                    ser.write(msg.encode())
+                    Logger.debug('LEDMatrix: msg is %s' % msg)
+                elif mode['matrix_mode'] == 'RGB donut':
+                    msg = ';'.join([mode['matrix_mode']])
+                    ser.write(msg.encode())
+                    Logger.debug('LEDMatrix: msg is %s' % msg)
 
 

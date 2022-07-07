@@ -184,7 +184,6 @@ class Updater(multiprocessing.Process):
         try:
             return float(paired_led_dosage[0][0])
         except ValueError:
-            Logger.debug('Updater: unable to get paired led dosage')
             return 0
 
     def get_dosage(self):
@@ -231,6 +230,8 @@ class Updater(multiprocessing.Process):
                                        exclude_ext='.h5')
 
     def neural_net_motion_decision(self, motion_list):
+        # set up a default opto_on to return
+        opto_on = str(0)
 
         if len(motion_list) > 0:
             self.motion_average = float(mean(motion_list))
@@ -256,7 +257,7 @@ class Updater(multiprocessing.Process):
         else:
             self.check_counter += 1
             if self.check_counter == self.check_led_dosage_interval:
-                # i will make the assumption that the light duty cycle is the same on both systems
+                # these assume led duty cycle is the same and total experiment time will be the same
                 self.paired_led_dosage_percent = self.get_paired_dosage()
                 self.led_dosage_percent = self.get_dosage()
                 Logger.info("Updater: paired dosage is %s, this system's dosage is %s" %
@@ -268,7 +269,6 @@ class Updater(multiprocessing.Process):
                 self.check_counter = 0
 
             rand_int = random.randint(1, 100)
-            Logger.debug('Updater: sleep percent is %s' % self.sleep_percent)
             if rand_int <= self.sleep_percent and self.motion_with_feedback:
                 # turn on the light
                 opto_on = str(1)
@@ -321,7 +321,7 @@ class Updater(multiprocessing.Process):
                             (self.paired_led_dosage_percent, self.led_dosage_percent))
                 # adjust initial sleep percent guess - if this is > 100 or < 0, this should still work
                 self.sleep_percent = self.paired_led_dosage_percent + \
-                    (self.paired_led_dosage_percent - self.led_dosage_percent)
+                                     (self.paired_led_dosage_percent - self.led_dosage_percent)
                 Logger.info("Updater: new sleep guess is %s" % self.sleep_percent)
                 self.check_counter = 0
 
@@ -382,8 +382,6 @@ class RepeatingTimer(threading.Thread):
                             t_update = threading.Thread(name='update', target=self.function, args=(self.default_args,))
                             t_update.start()
                     except OSError:
-                        Logger.debug('Repeating Timer: cannot update this round, likely a memory problem')
-                    except MemoryError:
                         Logger.debug('Repeating Timer: cannot update this round, likely a memory problem')
             except StopIteration:
                 Logger.info('Repeating Timer: ending repeating timer')
