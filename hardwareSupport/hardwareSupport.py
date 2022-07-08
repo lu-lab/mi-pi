@@ -51,7 +51,7 @@ class TempSensor(object):
 
 class LEDMatrix(object):
 
-    def __init__(self, config, color='255;0;0', radius=5, center=(16, 16), mode='darkfield', linescan_int=16, do_timelapse='None'):
+    def __init__(self, config, color='255;0;0', radius=5, center=(16, 16), mode='RGB pie', linescan_int=16, do_timelapse='None'):
         self.port = config.teensy_port
         self.color = color
         self.radius = radius
