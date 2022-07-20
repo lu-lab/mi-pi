@@ -13,8 +13,9 @@ from kivy.uix.boxlayout import BoxLayout
 from settings import expSettings_json, imagingSettings_json, \
     pressureSettings_json, imageProcessingSettings_json
 from fileTransfer import ManageLocalFiles
-from keys import SYSTEM_IDS, GOOGLE_SPREADSHEET_ID, \
+from keys import SYSTEM_IDS, \ 
     CURDIR, CONFIG_FILE, LOG_DIR
+    #GOOGLE_SPREADSHEET_ID
 from hardwareSupport.hardwareSupport import TeensyConfig, LEDMatrix
 import experiment
 
@@ -148,10 +149,10 @@ class Interface(BoxLayout):
             Logger.debug('Interface: update process terminated and camera joined')
 
         # grab data from the spreadsheet and write it to a csv file, then save it to the cloud service
-        max_row = self.explength + self.experiment.sheet.start_row
-        cell_range = 'A1:L' + str(max_row)
-        values = self.experiment.sheet.read_sheet(cell_range='A1:L')
-        self.experiment.write_sheet_to_dbx(values)
+        # max_row = self.explength + self.experiment.sheet.start_row
+        # cell_range = 'A1:L' + str(max_row)
+        # values = self.experiment.sheet.read_sheet(cell_range='A1:L')
+        # self.experiment.write_sheet_to_dbx(values)
 
         # copy logs to experiment folder
         # figure out the actual path by looking for the most recently modified folder.
@@ -210,7 +211,7 @@ class Interface(BoxLayout):
         self.LEDcolor = app.config.get('LED matrix', 'ledcolor')
         self.matrix_radius = app.config.getint('LED matrix', 'matrixradius')
         self.led_center = (app.config.getint('LED matrix', 'ledx'), app.config.getint('LED matrix', 'ledy'))
-        self.spreadsheet_id = app.config.get('experiment settings', 'google_spreadsheet_id')
+        #self.spreadsheet_id = app.config.get('experiment settings', 'google_spreadsheet_id')
         self.rclone_name = app.config.get('experiment settings', 'rclone_remote_name')
         self.teensy_config = TeensyConfig()
 
@@ -323,7 +324,7 @@ class KivycamApp(App):
             'local_exp_path': CURDIR,
             'remote_exp_path': '/Apps/wormscope_uploads/',
             'experimentlength': 120,
-            'google_spreadsheet_id': GOOGLE_SPREADSHEET_ID,
+            #'google_spreadsheet_id': GOOGLE_SPREADSHEET_ID,
             'rclone_remote_name': 'dropbox'
         })
 
