@@ -2,7 +2,6 @@
 
 SYSTEM_IDS =['accio', 'aguamenti', 'expecto patronum', 'diffindo', 'episkey', 'expelliarmus', 'impedimenta',
  'protego', 'revelio', 'tergeo',  'lumos', 'veritaserum', 'muffliato', 'alohomora', 'test']
-GOOGLE_SPREADSHEET_ID = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
 # set app icon
 from kivy.config import Config
