@@ -1,20 +1,6 @@
 #!/bin/bash
 
 cd ~/mi-pi
-echo "Making sure google sheets token is available..."
-# check whether there's a token file
-if [ -f "token.pickle" ]; then
-    echo "Credentials file exists, let's make sure they're valid! You'll need to be on the internet"
-    python3 setup_google_sheets.py
-else
-    echo "Opening browser so you can download your credentials. You just need to complete Step 1 of this Guide. Save the downloaded file to the /mi-pi/ folder."
-    chromium-browser -url "https://developers.google.com/sheets/api/quickstart/python"
-    echo "Is the credentials.json file saved in /mi-pi/? [Y(es)/ N(o)]"
-    read credentials_saved
-    if [ "$credentials_saved" == "y" ]; then
-        python3 setup_google_sheets.py
-    fi
-fi
 
 echo "Making sure rclone is configured..."
 # check for config file
