@@ -314,9 +314,9 @@ class KivycamApp(App):
             'paired_systemid': 'paired_test',
             'physical': 'agar',
             'local_exp_path': CURDIR,
-            'remote_exp_path': '/Apps/wormscope_uploads/',
-            'experimentlength': 120,
-            'rclone_remote_name': 'dropbox'
+            'remote_exp_path': '/mipi/',
+            'experimentlength': 3,
+            'rclone_remote_name': 'erin_dropbox'
         })
 
         config.setdefaults('LED matrix', {
